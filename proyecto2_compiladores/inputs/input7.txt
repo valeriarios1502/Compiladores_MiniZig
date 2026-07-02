@@ -1,0 +1,54 @@
+pub fn clasifica (n : i32) void {
+  switch (n) {
+    1 => {
+      print("uno");
+    },
+    2 => {
+      print("dos");
+    },
+    3 => {
+      print("tres");
+    },
+    else => {
+      print("otro");
+    },
+  }
+}
+
+pub fn diasemana (d : i32) void {
+  switch (d) {
+    1 => {
+      print("lunes");
+    },
+    2 => {
+      print("martes");
+    },
+    3 => {
+      print("miercoles");
+    },
+    4 => {
+      print("jueves");
+    },
+    5 => {
+      print("viernes");
+    },
+    else => {
+      print("fin de semana");
+    },
+  }
+}
+
+pub fn main () void {
+  clasifica(1);
+  clasifica(2);
+  clasifica(3);
+  clasifica(5);
+
+  diasemana(1);
+  diasemana(3);
+  diasemana(5);
+  diasemana(6);
+
+  var x = 2;
+  clasifica(x);
+}

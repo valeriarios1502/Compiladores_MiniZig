@@ -1,0 +1,16 @@
+pub fn main() i64 {
+    var arr: [10000000]i32 = undefined;
+    var i: i64 = 0;
+    while (i < 10000000) {
+        arr[i] = i % 100;
+        i = i + 1;
+    }
+    var sum: i64 = 0;
+    i = 0;
+    while (i < 10000000) {
+        sum = sum + arr[i];
+        i = i + 1;
+    }
+    print(sum);
+    return sum;
+}

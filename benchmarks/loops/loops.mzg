@@ -1,0 +1,10 @@
+pub fn main() i64 {
+    var sum: i64 = 0;
+    var i: i64 = 0;
+    while (i < 100000000) {
+        sum = sum + i;
+        i = i + 1;
+    }
+    print(sum);
+    return sum;
+}

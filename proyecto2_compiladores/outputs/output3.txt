@@ -1,0 +1,539 @@
+=== STDOUT ===
+__ASSEMBLY_UNOPTIMIZED_BEGIN__
+.section .data
+print_int_fmt:   .string "%ld\n"
+print_uint_fmt:  .string "%lu\n"
+print_float_fmt: .string "%g\n"
+print_str_fmt:   .string "%s\n"
+print_char_fmt:  .string "%c\n"
+print_bool_true: .string "true\n"
+print_bool_false:.string "false\n"
+
+.section .text
+.globl main
+
+saludar:
+    pushq %rbp
+    movq  %rsp, %rbp
+    subq  $1024, %rsp
+    leaq  LC_0(%rip), %rax
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    movq  %rax, %rsi
+    leaq  print_str_fmt(%rip), %rdi
+    xorq  %rax, %rax
+    call  printf@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    xorq  %rax, %rax
+    leave
+    ret
+
+sumar:
+    pushq %rbp
+    movq  %rsp, %rbp
+    subq  $1024, %rsp
+    movq  %rdi, -8(%rbp)
+    movq  %rsi, -16(%rbp)
+    movq  -16(%rbp), %rax
+    pushq %rax
+    movq  -8(%rbp), %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    leave
+    ret
+    xorq  %rax, %rax
+    leave
+    ret
+
+buscar:
+    pushq %rbp
+    movq  %rsp, %rbp
+    subq  $1024, %rsp
+    movq  %rdi, -8(%rbp)
+    movq  %rsi, -16(%rbp)
+    movq  $0, %rax
+    movq  %rax, -24(%rbp)
+while_start_1:
+    movq  -16(%rbp), %rax
+    pushq %rax
+    movq  -24(%rbp), %rax
+    popq  %rcx
+    cmpq  %rcx, %rax
+    setl  %al
+    movzbq %al, %rax
+    cmpq  $0, %rax
+    je    while_end_2
+    movq  $1, %rax
+    pushq %rax
+    movq  -24(%rbp), %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, -24(%rbp)
+    jmp   while_start_1
+while_end_2:
+    movq  -24(%rbp), %rax
+    leave
+    ret
+    xorq  %rax, %rax
+    leave
+    ret
+
+main:
+    pushq %rbp
+    movq  %rsp, %rbp
+    subq  $1024, %rsp
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    xorq  %rax, %rax
+    call  saludar
+    movq  %r12, %rsp
+    popq  %r12
+    movq  $4, %rax
+    pushq %rax
+    movq  $3, %rax
+    pushq %rax
+    popq  %rdi
+    popq  %rsi
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    xorq  %rax, %rax
+    call  sumar
+    movq  %r12, %rsp
+    popq  %r12
+    movq  %rax, -8(%rbp)
+    movq  -8(%rbp), %rax
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    movq  %rax, %rsi
+    leaq  print_int_fmt(%rip), %rdi
+    xorq  %rax, %rax
+    call  printf@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    movq  $20, %rax
+    pushq %rax
+    movq  $10, %rax
+    pushq %rax
+    popq  %rdi
+    popq  %rsi
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    xorq  %rax, %rax
+    call  sumar
+    movq  %r12, %rsp
+    popq  %r12
+    movq  %rax, -16(%rbp)
+    movq  -16(%rbp), %rax
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    movq  %rax, %rsi
+    leaq  print_int_fmt(%rip), %rdi
+    xorq  %rax, %rax
+    call  printf@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    movq  $200, %rax
+    pushq %rax
+    movq  $100, %rax
+    pushq %rax
+    popq  %rdi
+    popq  %rsi
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    xorq  %rax, %rax
+    call  sumar
+    movq  %r12, %rsp
+    popq  %r12
+    movq  %rax, -24(%rbp)
+    movq  -24(%rbp), %rax
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    movq  %rax, %rsi
+    leaq  print_int_fmt(%rip), %rdi
+    xorq  %rax, %rax
+    call  printf@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    movq  $512, %rdi
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    xorq  %rax, %rax
+    call  malloc@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    movq  %rax, -32(%rbp)
+    movq  $10, %rax
+    pushq %rax
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  $0, %rax
+    imulq $8, %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, %rcx
+    popq  %rdx
+    movq  %rdx, (%rcx)
+    movq  $20, %rax
+    pushq %rax
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  $1, %rax
+    imulq $8, %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, %rcx
+    popq  %rdx
+    movq  %rdx, (%rcx)
+    movq  $30, %rax
+    pushq %rax
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  $2, %rax
+    imulq $8, %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, %rcx
+    popq  %rdx
+    movq  %rdx, (%rcx)
+    movq  $40, %rax
+    pushq %rax
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  $3, %rax
+    imulq $8, %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, %rcx
+    popq  %rdx
+    movq  %rdx, (%rcx)
+    movq  $50, %rax
+    pushq %rax
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  $4, %rax
+    imulq $8, %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, %rcx
+    popq  %rdx
+    movq  %rdx, (%rcx)
+    movq  $0, %rax
+    movq  %rax, -40(%rbp)
+while_start_3:
+    movq  $5, %rax
+    pushq %rax
+    movq  -40(%rbp), %rax
+    popq  %rcx
+    cmpq  %rcx, %rax
+    setl  %al
+    movzbq %al, %rax
+    cmpq  $0, %rax
+    je    while_end_4
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  -40(%rbp), %rax
+    popq  %rcx
+    movq  (%rcx,%rax,8), %rax
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    movq  %rax, %rsi
+    leaq  print_int_fmt(%rip), %rdi
+    xorq  %rax, %rax
+    call  printf@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    movq  $1, %rax
+    pushq %rax
+    movq  -40(%rbp), %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, -40(%rbp)
+    jmp   while_start_3
+while_end_4:
+    xorq  %rax, %rax
+    leave
+    ret
+
+.section .rodata
+LC_0: .string "hola"
+__ASSEMBLY_UNOPTIMIZED_END__
+__ASSEMBLY_OPTIMIZED_BEGIN__
+.section .data
+print_int_fmt:   .string "%ld\n"
+print_uint_fmt:  .string "%lu\n"
+print_float_fmt: .string "%g\n"
+print_str_fmt:   .string "%s\n"
+print_char_fmt:  .string "%c\n"
+print_bool_true: .string "true\n"
+print_bool_false:.string "false\n"
+
+.section .text
+.globl main
+
+saludar:
+    pushq %rbp
+    movq  %rsp, %rbp
+    subq  $1024, %rsp
+    leaq  LC_0(%rip), %rax
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    movq  %rax, %rsi
+    leaq  print_str_fmt(%rip), %rdi
+    xorq  %rax, %rax
+    call  printf@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    xorq  %rax, %rax
+    leave
+    ret
+
+sumar:
+    pushq %rbp
+    movq  %rsp, %rbp
+    subq  $1024, %rsp
+    movq  %rdi, -8(%rbp)
+    movq  %rsi, -16(%rbp)
+    movq  -16(%rbp), %rax
+    pushq %rax
+    movq  -8(%rbp), %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    leave
+    ret
+    xorq  %rax, %rax
+    leave
+    ret
+
+buscar:
+    pushq %rbp
+    movq  %rsp, %rbp
+    subq  $1024, %rsp
+    movq  %rdi, -8(%rbp)
+    movq  %rsi, -16(%rbp)
+    movq  $0, %rax
+    movq  %rax, -24(%rbp)
+while_start_1:
+    movq  -16(%rbp), %rax
+    pushq %rax
+    movq  -24(%rbp), %rax
+    popq  %rcx
+    cmpq  %rcx, %rax
+    setl  %al
+    movzbq %al, %rax
+    cmpq  $0, %rax
+    je    while_end_2
+    movq  $1, %rax
+    pushq %rax
+    movq  -24(%rbp), %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, -24(%rbp)
+    jmp   while_start_1
+while_end_2:
+    movq  -24(%rbp), %rax
+    leave
+    ret
+    xorq  %rax, %rax
+    leave
+    ret
+
+main:
+    pushq %rbp
+    movq  %rsp, %rbp
+    subq  $1024, %rsp
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    xorq  %rax, %rax
+    call  saludar
+    movq  %r12, %rsp
+    popq  %r12
+    movq  $4, %rax
+    pushq %rax
+    movq  $3, %rax
+    movq  %rax, %rdi
+    popq  %rsi
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    xorq  %rax, %rax
+    call  sumar
+    movq  %r12, %rsp
+    popq  %r12
+    movq  %rax, -8(%rbp)
+    movq  -8(%rbp), %rax
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    movq  %rax, %rsi
+    leaq  print_int_fmt(%rip), %rdi
+    xorq  %rax, %rax
+    call  printf@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    movq  $20, %rax
+    pushq %rax
+    movq  $10, %rax
+    movq  %rax, %rdi
+    popq  %rsi
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    xorq  %rax, %rax
+    call  sumar
+    movq  %r12, %rsp
+    popq  %r12
+    movq  %rax, -16(%rbp)
+    movq  -16(%rbp), %rax
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    movq  %rax, %rsi
+    leaq  print_int_fmt(%rip), %rdi
+    xorq  %rax, %rax
+    call  printf@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    movq  $200, %rax
+    pushq %rax
+    movq  $100, %rax
+    movq  %rax, %rdi
+    popq  %rsi
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    xorq  %rax, %rax
+    call  sumar
+    movq  %r12, %rsp
+    popq  %r12
+    movq  %rax, -24(%rbp)
+    movq  -24(%rbp), %rax
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    movq  %rax, %rsi
+    leaq  print_int_fmt(%rip), %rdi
+    xorq  %rax, %rax
+    call  printf@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    movq  $512, %rdi
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    xorq  %rax, %rax
+    call  malloc@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    movq  %rax, -32(%rbp)
+    movq  $10, %rax
+    pushq %rax
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  $0, %rax
+    shlq  $3, %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, %rcx
+    popq  %rdx
+    movq  %rdx, (%rcx)
+    movq  $20, %rax
+    pushq %rax
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  $1, %rax
+    shlq  $3, %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, %rcx
+    popq  %rdx
+    movq  %rdx, (%rcx)
+    movq  $30, %rax
+    pushq %rax
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  $2, %rax
+    shlq  $3, %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, %rcx
+    popq  %rdx
+    movq  %rdx, (%rcx)
+    movq  $40, %rax
+    pushq %rax
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  $3, %rax
+    shlq  $3, %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, %rcx
+    popq  %rdx
+    movq  %rdx, (%rcx)
+    movq  $50, %rax
+    pushq %rax
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  $4, %rax
+    shlq  $3, %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, %rcx
+    popq  %rdx
+    movq  %rdx, (%rcx)
+    movq  $0, %rax
+    movq  %rax, -40(%rbp)
+while_start_3:
+    movq  $5, %rax
+    pushq %rax
+    movq  -40(%rbp), %rax
+    popq  %rcx
+    cmpq  %rcx, %rax
+    setl  %al
+    movzbq %al, %rax
+    cmpq  $0, %rax
+    je    while_end_4
+    movq  -32(%rbp), %rax
+    pushq %rax
+    movq  -40(%rbp), %rax
+    popq  %rcx
+    movq  (%rcx,%rax,8), %rax
+    pushq %r12
+    movq  %rsp, %r12
+    andq  $-16, %rsp
+    movq  %rax, %rsi
+    leaq  print_int_fmt(%rip), %rdi
+    xorq  %rax, %rax
+    call  printf@PLT
+    movq  %r12, %rsp
+    popq  %r12
+    movq  $1, %rax
+    pushq %rax
+    movq  -40(%rbp), %rax
+    popq  %rcx
+    addq  %rcx, %rax
+    movq  %rax, -40(%rbp)
+    jmp   while_start_3
+while_end_4:
+    xorq  %rax, %rax
+    leave
+    ret
+
+.section .rodata
+LC_0: .string "hola"
+__ASSEMBLY_OPTIMIZED_END__
+
+=== STDERR ===
+Parseo exitoso
