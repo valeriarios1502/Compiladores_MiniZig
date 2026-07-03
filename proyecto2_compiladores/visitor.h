@@ -69,7 +69,6 @@ struct CFValue {
     explicit CFValue(double    v) : is_const(true), int_val((long long)v), dbl_val(v) {}
 };
 
-//   Visitor — clase base abstracta
 class Visitor {
 public:
     virtual ~Visitor() = default;
@@ -131,87 +130,60 @@ public:
     virtual void visit(Programa* p) = 0;
 };
 
-//   GenCodeVisitor — generación de código x86-64 AT&T
 class GenCodeVisitor : public Visitor {
 public:
     bool hayComptimeGlobal = false;
 
-    std::unordered_map<std::string, std::string> globalTypes; // nombre → "int"|"float"|"str"|"char"|"bool"
+    std::unordered_map<std::string, std::string> globalTypes; 
     std::unordered_set<std::string> globalNames;  
-    // ── Variables locales: nombre → slot (1-based) ───────────────────────
-    //   slot N  →  -N*8(%rbp)
     std::unordered_map<std::string, int> posicion;
 
-    // ── Constantes de error: "error.X" → entero único ────────────────────
     std::unordered_map<std::string, int> errorCodes;
 
-    // ── Próximo slot libre en el frame (empieza en 1) ────────────────────
     int varContador = 1;
 
-    // ── Literales de string acumulados para .rodata ───────────────────────
-    std::vector<std::pair<std::string, std::string>> stringLiterals;  // (label, value)
-
-    // ── Funciones registradas para forward references ─────────────────────
+    std::vector<std::pair<std::string, std::string>> stringLiterals;  
     std::unordered_map<std::string, Fundec*> funEnv;
 
-    // ── Tabla de structs: nombre_struct → { campo → byteOffset } ─────────
     std::unordered_map<std::string,
         std::unordered_map<std::string, int>> structFieldOffsets;
 
-    // ── Número de campos por struct ───────────────────────────────────────
     std::unordered_map<std::string, int> structFieldCount;
 
-    // ── Contador global de etiquetas únicas ──────────────────────────────
     int labelCounter = 0;
 
-    // ── Etiquetas del bucle actual (break / continue) ─────────────────────
     std::string currentLoopEnd;
     std::string currentLoopStart;
 
-    // ── Nombre de la función en generación ───────────────────────────────
     std::string currentFunction;
 
-    // ── Punto de entrada público ──────────────────────────────────────────
     void gencode(Programa* programa);
 
-    // =========================================================================
-    //  Helpers
-    // =========================================================================
-
-    // Genera etiqueta única: newLabel("if") → "if_0", "if_1", …
     std::string newLabel(const std::string& base) {
         return base + "_" + std::to_string(labelCounter++);
     }
 
-    // Dirección de una variable local:  offset("x") → "-8(%rbp)"  si slot==1
     std::string offset(const std::string& nombre) {
         return std::to_string(posicion.at(nombre) * -8) + "(%rbp)";
     }
 
-    // Acumula un literal de string y devuelve su etiqueta
     std::string internString(const std::string& valor) {
         std::string lbl = newLabel("LC");
         stringLiterals.push_back({lbl, valor});
         return lbl;
     }
 
-    // Redondea bytes al múltiplo de 16 superior (alineación ABI)
     static int alignFrame(int slots) {
         int bytes = slots * 8;
         return (bytes + 15) & ~15;
     }
 
-    // Emite una llamada alineada a 16 bytes usando %r12 como scratch callee-saved
     void emitAlignedCall(const std::string& target);
 
-    // Emite instrucciones para dejar en %rax la dirección base del struct
-    // al que apunta la expresión 'expr' (variable local o puntero heap).
     void emitStructBaseAddress(Exp* expr);
 
-    // Devuelve el byte offset del campo 'fieldName' buscando en structFieldOffsets.
     int getFieldOffset(Exp* base, const std::string& fieldName);
 
-    // ── Helpers para globales ─────────────────────────────────────────────
     void emitGlobalVarDec(VarDec* vd);
     void emitGlobalConstDec(ConstDec* cd);
 
@@ -282,7 +254,6 @@ class ConstantFolding : public Visitor {
 public:
     std::unordered_map<std::string, CFValue> cfEnv;
  
-    // helpers privados que devuelven CFValue
     CFValue fold(Exp* e);
  
    
@@ -404,22 +375,15 @@ public:
 };
 
 
-// ─── Cascada ────────────────────────────────────────────────────────────────
-// Pase sobre el AST: constant-folding inline, copy-propagation,
-// eliminación de código muerto y simplificaciones algebraicas.
+// Cascada
 class Cascada : public Visitor {
 public:
-    // Entorno: nombre → valor constante conocido
     std::unordered_map<std::string, CFValue> env;
-    // Variables "muertas" (asignadas pero nunca leídas en este scope)
     std::unordered_set<std::string> used;
 
-    // Punto de entrada
     void optimize(Programa* p);
 
-    // Helpers
     CFValue fold(Exp* e);
-    // Devuelve true si la expresión es la constante entera k
     bool isIntConst(Exp* e, long long k);
 
     Value visit(BinaryExp*                 exp) override;
@@ -482,18 +446,18 @@ public:
     std::vector<std::string> optimize(const std::vector<std::string>& input);
 
 private:
-    bool ruleRedundantMov   (std::vector<std::string>& w, int i); // mov %rax,%rax
-    bool rulePushPop        (std::vector<std::string>& w, int i); // pushq/popq mismo reg
-    bool ruleMovThenMov     (std::vector<std::string>& w, int i); // mov A→B; mov A→B
-    bool ruleAddZero        (std::vector<std::string>& w, int i); // addq $0, %rax
-    bool ruleSubZero        (std::vector<std::string>& w, int i); // subq $0, %rax
-    bool ruleMulOne         (std::vector<std::string>& w, int i); // imulq $1, %rax
-    bool ruleJmpToNext      (std::vector<std::string>& w, int i); // jmp label; label:
-    bool ruleJmpToJmp       (std::vector<std::string>& w, int i); // jmp L1; L1: jmp L2
-    bool ruleXorThenMov     (std::vector<std::string>& w, int i); // xorq %rax,%rax; movq $k,%rax
-    bool ruleLeaveRet       (std::vector<std::string>& w, int i); // leave+ret duplicados
-    bool ruleMulPow2        (std::vector<std::string>& w, int i); // imulq $2^n → shlq
-    bool ruleDivPow2        (std::vector<std::string>& w, int i); // idivq $2^n → sarq
+    bool ruleRedundantMov   (std::vector<std::string>& w, int i); 
+    bool rulePushPop        (std::vector<std::string>& w, int i); 
+    bool ruleMovThenMov     (std::vector<std::string>& w, int i); 
+    bool ruleAddZero        (std::vector<std::string>& w, int i); 
+    bool ruleSubZero        (std::vector<std::string>& w, int i); 
+    bool ruleMulOne         (std::vector<std::string>& w, int i); 
+    bool ruleJmpToNext      (std::vector<std::string>& w, int i); 
+    bool ruleJmpToJmp       (std::vector<std::string>& w, int i); 
+    bool ruleXorThenMov     (std::vector<std::string>& w, int i); 
+    bool ruleLeaveRet       (std::vector<std::string>& w, int i); 
+    bool ruleMulPow2        (std::vector<std::string>& w, int i); 
+    bool ruleDivPow2        (std::vector<std::string>& w, int i); 
 
     static std::string trim(const std::string& s);
     static bool isLabel(const std::string& s);
