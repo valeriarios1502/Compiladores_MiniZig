@@ -10,15 +10,12 @@
 
 using namespace std;
 
-// Registros de argumentos
 static const char* argRegs[] = {
     "%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"
 };
 static const int MAX_REG_ARGS = 6;
 
-// =============================================================================
-//  Helpers de SethiUlman — deben ir ANTES de cualquier visit() que los use
-// =============================================================================
+//  Helpers de SethiUlman 
 
 static int suOf(Value v) { return v.i > 0 ? v.i : 1; }
 
@@ -31,9 +28,7 @@ static Value suResult(int su, int& maxReg) {
     return Value::makeInt(su);
 }
 
-// =============================================================================
-//  Helpers de ConstantFolding — también antes de su uso
-// =============================================================================
+//  Helpers de ConstantFolding
 
 static CFValue toCF(const Value& v) {
     switch (v.kind) {
@@ -54,9 +49,7 @@ static Value fromCF(const CFValue& cf) {
     return Value::makeFloat(cf.dbl_val);
 }
 
-// =============================================================================
 //  Helpers de GenCode
-// =============================================================================
 
 static string escapeString(const string& s) {
     string out;
@@ -82,9 +75,7 @@ static std::string inferGlobalType(Exp* exp) {
     return "int";
 }
 
-// =============================================================================
-//  GenCodeVisitor — helpers miembro
-// =============================================================================
+//  GenCodeVisitor
 
 void GenCodeVisitor::emitAlignedCall(const string& target) {
     cout << "    pushq %r12"       << endl;
@@ -176,9 +167,7 @@ void GenCodeVisitor::emitGlobalConstDec(ConstDec* cd) {
     }
 }
 
-// =============================================================================
-//  GenCodeVisitor — gencode / Programa / Fundec / Template
-// =============================================================================
+//  GenCodeVisitor — Programa, Fundec, Template
 
 void GenCodeVisitor::gencode(Programa* programa) {
     for (Top_dec* d : programa->declist) {
@@ -334,10 +323,6 @@ void GenCodeVisitor::visit(Body* b) {
         s->accept(this);
 }
 
-// =============================================================================
-//  VarDec / ConstDec
-// =============================================================================
-
 void GenCodeVisitor::visit(VarDec* vd) {
     if (currentFunction.empty()) return;
 
@@ -393,9 +378,7 @@ void GenCodeVisitor::visit(ConstDec* cd) {
     }
 }
 
-// =============================================================================
 //  Statements
-// =============================================================================
 
 void GenCodeVisitor::visit(AsignStmt* stm) {
     if (stm->variable == "__call__") {
@@ -685,9 +668,7 @@ void GenCodeVisitor::visit(DeleteStm* stm) {
 void GenCodeVisitor::visit(DeferStmt* stm) { if (stm->stmt) stm->stmt->accept(this); }
 void GenCodeVisitor::visit(TryStmt*   stm) { if (stm->try_body) stm->try_body->accept(this); }
 
-// =============================================================================
-//  Expresiones — GenCode
-// =============================================================================
+//  Expresiones 
 
 Value GenCodeVisitor::visit(NumberExpDecimal* exp) {
     cout << "    movq  $" << exp->value << ", %rax" << endl;
@@ -741,19 +722,12 @@ Value GenCodeVisitor::visit(IdExp* exp) {
     return Value();
 }
 
-// ── BinaryExp — BUG FIJO: right se evalúa y apila; left queda en %rax ───────
 Value GenCodeVisitor::visit(BinaryExp* exp) {
-    // 1. Evaluar right → apilar
     exp->right->accept(this);
-    cout << "    pushq %rax" << endl;      // right en stack
+    cout << "    pushq %rax" << endl;   
+    exp->left->accept(this);          
+    cout << "    popq  %rcx" << endl;   
 
-    // 2. Evaluar left → %rax
-    exp->left->accept(this);              // left  en %rax
-
-    // 3. Recuperar right → %rcx
-    cout << "    popq  %rcx" << endl;     // right en %rcx
-
-    // 4. Operar: %rax = left,  %rcx = right
     switch (exp->op) {
         case PLUS_OP:
             cout << "    addq  %rcx, %rax"  << endl; break;
@@ -972,9 +946,7 @@ void GenCodeVisitor::visit(ErrorType*    t) {}
 void GenCodeVisitor::visit(UnionType*    t) {}
 void GenCodeVisitor::visit(EnumType*     t) {}
 
-// =============================================================================
 //  ConstantFolding
-// =============================================================================
 
 CFValue ConstantFolding::fold(Exp* e) {
     if (!e) return CFValue();
@@ -1083,9 +1055,7 @@ void ConstantFolding::visit(EnumType*     t) {}
 void ConstantFolding::visit(Body*     b) { for (Stmt* s : b->slist) s->accept(this); }
 void ConstantFolding::visit(Programa* p) { for (Top_dec* d : p->declist) d->accept(this); }
 
-// =============================================================================
 //  SethiUlman
-// =============================================================================
 
 Value SethiUlman::visit(NumberExpDecimal*  exp) { return suResult(1, maxRegisters); }
 Value SethiUlman::visit(NumberExpFlotante* exp) { return suResult(1, maxRegisters); }
@@ -1181,11 +1151,9 @@ void SethiUlman::visit(Programa* p) {
     if (verbose) cerr << "[SU] Programa → max registros globales = " << maxRegisters << "\n";
 }
 
-// =============================================================================
 //  Cascada — helpers
-// =============================================================================
 
-static CFValue toCF_C(const Value& v) { return toCF(v); }   // reutiliza el helper existente
+static CFValue toCF_C(const Value& v) { return toCF(v); } 
 static Value   fromCF_C(const CFValue& cf) { return fromCF(cf); }
 
 bool Cascada::isIntConst(Exp* e, long long k) {
@@ -1202,9 +1170,7 @@ CFValue Cascada::fold(Exp* e) {
 
 void Cascada::optimize(Programa* p) { p->accept(this); }
 
-// =============================================================================
-//  Cascada — expresiones
-// =============================================================================
+//  Cascada 
 
 Value Cascada::visit(NumberExpDecimal*  exp) { return Value::makeInt(exp->value); }
 Value Cascada::visit(NumberExpFlotante* exp) { return Value::makeFloat((double)exp->value); }
@@ -1242,16 +1208,9 @@ Value Cascada::visit(IdExp* exp) {
 }
 
 
-// =============================================================================
-//  Cascada — expresiones (versión segura, sin modificar el AST)
-// =============================================================================
-
 Value Cascada::visit(BinaryExp* exp) {
     CFValue lv = fold(exp->left);
     CFValue rv = fold(exp->right);
-
-    // Simplificaciones algebraicas: registrar en env si aplica,
-    // pero NO tocar los punteros del AST.
 
     if (!lv.is_const || !rv.is_const) return Value();
 
@@ -1292,9 +1251,6 @@ Value Cascada::visit(UnaryExp* exp) {
         default:               return Value();
     }
 }
-// =============================================================================
-//  Cascada — statements
-// =============================================================================
 
 void Cascada::visit(AsignStmt* stm) {
     if (!stm->exp) return;
@@ -1333,13 +1289,11 @@ void Cascada::visit(IfStmt* stm) {
 void Cascada::visit(WhileStmt* stm) {
     if (stm->condicion) {
         CFValue cond = fold(stm->condicion);
-        // while(false) → eliminar cuerpo completo
         if (cond.is_const && cond.int_val == 0) return;
     }
-    // Conservador: invalida todo lo modificado dentro del bucle
     auto saved = env;
     for (Stmt* s : stm->cuerpodelwhile) s->accept(this);
-    env = saved; // las asignaciones dentro del loop no son estables
+    env = saved; 
 }
 
 void Cascada::visit(ForStmt* stm) {
@@ -1395,9 +1349,7 @@ void Cascada::visit(EnumType*     t) {}
 void Cascada::visit(Body*     b) { for (Stmt* s : b->slist) s->accept(this); }
 void Cascada::visit(Programa* p) { for (Top_dec* d : p->declist) d->accept(this); }
 
-// =============================================================================
-//  Peephole — utilidades de texto
-// =============================================================================
+//  Peephole 
 
 std::string Peephole::trim(const std::string& s) {
     size_t a = s.find_first_not_of(" \t");
@@ -1425,14 +1377,8 @@ bool Peephole::isPow2(long long n, int& shift) {
     return true;
 }
 
-// =============================================================================
-//  Peephole — reglas
-// =============================================================================
-
-// mov %rax, %rax  →  eliminar
 bool Peephole::ruleRedundantMov(std::vector<std::string>& w, int i) {
     std::string t = trim(w[i]);
-    // movq %X, %X
     if (t.rfind("movq", 0) != 0) return false;
     size_t comma = t.find(',');
     if (comma == std::string::npos) return false;
@@ -1442,7 +1388,6 @@ bool Peephole::ruleRedundantMov(std::vector<std::string>& w, int i) {
     return false;
 }
 
-// pushq %rax  +  popq %rax  →  eliminar ambas
 bool Peephole::rulePushPop(std::vector<std::string>& w, int i) {
     if (i + 1 >= (int)w.size()) return false;
     std::string a = trim(w[i]), b = trim(w[i+1]);
@@ -1450,7 +1395,6 @@ bool Peephole::rulePushPop(std::vector<std::string>& w, int i) {
     std::string ra = trim(a.substr(6));
     std::string rb = trim(b.substr(5));
     if (ra == rb) { w.erase(w.begin()+i, w.begin()+i+2); return true; }
-    // pushq %rax + popq %rcx → movq %rax, %rcx
     if (!ra.empty() && !rb.empty()) {
         w[i] = "    movq  " + ra + ", " + rb;
         w.erase(w.begin()+i+1);
@@ -1459,7 +1403,6 @@ bool Peephole::rulePushPop(std::vector<std::string>& w, int i) {
     return false;
 }
 
-// movq A, %rax  +  movq A, %rax  →  eliminar duplicado
 bool Peephole::ruleMovThenMov(std::vector<std::string>& w, int i) {
     if (i + 1 >= (int)w.size()) return false;
     std::string a = trim(w[i]), b = trim(w[i+1]);
@@ -1467,28 +1410,24 @@ bool Peephole::ruleMovThenMov(std::vector<std::string>& w, int i) {
     return false;
 }
 
-// addq $0, %rax → eliminar
 bool Peephole::ruleAddZero(std::vector<std::string>& w, int i) {
     std::string t = trim(w[i]);
     if (t == "addq  $0, %rax" || t == "addq $0, %rax") { w.erase(w.begin()+i); return true; }
     return false;
 }
 
-// subq $0, %rax → eliminar
 bool Peephole::ruleSubZero(std::vector<std::string>& w, int i) {
     std::string t = trim(w[i]);
     if (t == "subq  $0, %rax" || t == "subq $0, %rax") { w.erase(w.begin()+i); return true; }
     return false;
 }
 
-// imulq $1, %rax → eliminar
 bool Peephole::ruleMulOne(std::vector<std::string>& w, int i) {
     std::string t = trim(w[i]);
     if (t == "imulq $1, %rax" || t == "imulq  $1, %rax") { w.erase(w.begin()+i); return true; }
     return false;
 }
 
-// jmp Lx  seguido inmediatamente de "Lx:"  →  eliminar el jmp
 bool Peephole::ruleJmpToNext(std::vector<std::string>& w, int i) {
     if (i + 1 >= (int)w.size()) return false;
     std::string a = trim(w[i]);
@@ -1499,7 +1438,6 @@ bool Peephole::ruleJmpToNext(std::vector<std::string>& w, int i) {
     return false;
 }
 
-// jmp L1  + L1: jmp L2  →  jmp L2
 bool Peephole::ruleJmpToJmp(std::vector<std::string>& w, int i) {
     if (i + 2 >= (int)w.size()) return false;
     std::string a = trim(w[i]);
@@ -1515,7 +1453,6 @@ bool Peephole::ruleJmpToJmp(std::vector<std::string>& w, int i) {
     return false;
 }
 
-// xorq %rax,%rax  seguido de  movq $k,%rax  →  solo movq
 bool Peephole::ruleXorThenMov(std::vector<std::string>& w, int i) {
     if (i + 1 >= (int)w.size()) return false;
     std::string a = trim(w[i]), b = trim(w[i+1]);
@@ -1527,7 +1464,6 @@ bool Peephole::ruleXorThenMov(std::vector<std::string>& w, int i) {
     return false;
 }
 
-// leave + ret duplicados (dos leave+ret consecutivos) → uno solo
 bool Peephole::ruleLeaveRet(std::vector<std::string>& w, int i) {
     if (i + 3 >= (int)w.size()) return false;
     if (trim(w[i])=="leave" && trim(w[i+1])=="ret" &&
@@ -1538,7 +1474,6 @@ bool Peephole::ruleLeaveRet(std::vector<std::string>& w, int i) {
     return false;
 }
 
-// imulq $2^n, %rax  →  shlq $n, %rax
 bool Peephole::ruleMulPow2(std::vector<std::string>& w, int i) {
     std::string t = trim(w[i]);
     if (t.rfind("imulq", 0) != 0) return false;
@@ -1555,8 +1490,6 @@ bool Peephole::ruleMulPow2(std::vector<std::string>& w, int i) {
     return true;
 }
 
-// idivq $2^n  (precedido de cqto) → sarq $n, %rax
-// Patrón: cqto / idivq $k → sarq $n, %rax (sólo enteros positivos garantizados)
 bool Peephole::ruleDivPow2(std::vector<std::string>& w, int i) {
     if (i + 1 >= (int)w.size()) return false;
     std::string a = trim(w[i]), b = trim(w[i+1]);
@@ -1569,15 +1502,10 @@ bool Peephole::ruleDivPow2(std::vector<std::string>& w, int i) {
     try { n = std::stoll(numStr); } catch(...) { return false; }
     int shift = 0;
     if (!isPow2(n, shift)) return false;
-    // Reemplaza cqto + idivq $2^n con sarq $n, %rax
     w[i]   = "    sarq  $" + std::to_string(shift) + ", %rax";
     w.erase(w.begin()+i+1);
     return true;
 }
-
-// =============================================================================
-//  Peephole — optimize (loop principal)
-// =============================================================================
 
 std::vector<std::string> Peephole::optimize(const std::vector<std::string>& input) {
     std::vector<std::string> w = input;
@@ -1604,10 +1532,6 @@ std::vector<std::string> Peephole::optimize(const std::vector<std::string>& inpu
     }
     return w;
 }
-
-// =============================================================================
-//  Peephole — todos los visit son no-ops (interfaz requerida)
-// =============================================================================
 
 Value Peephole::visit(BinaryExp*                 e) { return Value(); }
 Value Peephole::visit(NumberExpDecimal*          e) { return Value(); }
