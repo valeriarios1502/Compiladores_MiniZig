@@ -115,7 +115,6 @@ struct Value {
     }
 };
 
-// Operadores binarios soportados
 enum BinaryOp { 
     PLUS_OP, 
     MINUS_OP,
@@ -135,7 +134,6 @@ enum BinaryOp {
 };
 
 // ==================== Exp ====================
-// Todas las subclases de Exp deben retornar Value en accept()
 
 class Exp {
 public:
@@ -305,8 +303,6 @@ public:
     ~LambdaExp();
 };
 
-// ==================== Stmt ====================
-// Todas las subclases de Stmt deben retornar void en accept()
 
 class Stmt {
 public:
@@ -441,8 +437,6 @@ struct DerefAssignStmt : Stmt {
     void accept(Visitor* v) override; 
 };
 
-// ==================== Top_dec ====================
-// Todas las subclases de Top_dec deben retornar void en accept()
 
 class Top_dec {
 public:
@@ -507,8 +501,6 @@ public:
     ~Template();
 };
 
-// ==================== Type ====================
-// Todas las subclases de Type deben retornar void en accept()
 
 class Type {
 public:
@@ -578,7 +570,6 @@ public:
     ~EnumType();
 };
 
-// ==================== Body / Programa ====================
 
 class Body {
 public:
