@@ -4,10 +4,6 @@
 
 using namespace std;
 
-// ============================================================
-// Punto de entrada público
-// ============================================================
-
 void TypeCheckerVisitor::typecheck(Programa* programa) {
     env.clear();      
     funEnv.clear();
@@ -16,10 +12,6 @@ void TypeCheckerVisitor::typecheck(Programa* programa) {
     registerFunctions(programa);
     programa->accept(this);
 }
-
-// ============================================================
-// Pre-registro de structs y funciones (para forward references)
-// ============================================================
 
 void TypeCheckerVisitor::registerStructs(Programa* p) {
     for (Top_dec* d : p->declist) {
@@ -31,7 +23,6 @@ void TypeCheckerVisitor::registerStructs(Programa* p) {
             }
             structEnv[sd->nombre] = fields;
         }
-        // Unions también las registramos como si fueran structs
         if (VarDec* vd = dynamic_cast<VarDec*>(d)) {
             if (UnionType* ut = dynamic_cast<UnionType*>(vd->tipo)) {
                 unordered_map<string, string> fields;
@@ -72,9 +63,6 @@ void TypeCheckerVisitor::registerFunctions(Programa* p) {
     }
 }
 
-// ============================================================
-// Programa y Body
-// ============================================================
 
 void TypeCheckerVisitor::visit(Programa* p) {
     env.add_level();
@@ -90,13 +78,8 @@ void TypeCheckerVisitor::visit(Body* b) {
     env.remove_level();
 }
 
-// ============================================================
-// Declaraciones
-// ============================================================
-
 void TypeCheckerVisitor::visit(Fundec* fd) {
     if (fd->nombre == "__comptime__") {
-        // bloque comptime top-level
         fd->cuerpo->accept(this);
         return;
     }
@@ -131,7 +114,6 @@ void TypeCheckerVisitor::visit(Fundec* fd) {
 }
 
 void TypeCheckerVisitor::visit(Structdec* sd) {
-    // Ya fue registrado en registerStructs; nada más que hacer
 }
 
 void TypeCheckerVisitor::visit(VarDec* vd) {
@@ -187,7 +169,6 @@ void TypeCheckerVisitor::visit(ConstDec* cd) {
 }
 
 void TypeCheckerVisitor::visit(Template* t) {
-    // Tratamos el parámetro genérico como un tipo opaco
     string prevFunction = currentFunction;
     string prevReturn   = expectedReturnType;
     bool   prevHasRet   = hasReturn;
@@ -198,7 +179,6 @@ void TypeCheckerVisitor::visit(Template* t) {
     hasReturn          = false;
 
     env.add_level();
-    // Registramos el parámetro de tipo genérico como tipo "any"
     env.add_var(t->id2, "type");
 
     for (size_t i = 0; i < t->id_parametros.size(); ++i) {
@@ -215,10 +195,6 @@ void TypeCheckerVisitor::visit(Template* t) {
     expectedReturnType = prevReturn;
     hasReturn          = prevHasRet;
 }
-
-// ============================================================
-// Statements
-// ============================================================
 
 void TypeCheckerVisitor::visit(IfStmt* stm) {
     string condType = inferType(stm->condicion);
@@ -290,7 +266,6 @@ void TypeCheckerVisitor::visit(AsignStmt* stm) {
 }
 
 void TypeCheckerVisitor::visit(PrintStmt* stm) {
-    // print acepta cualquier tipo
     if (stm->exp) inferType(stm->exp);
 }
 
@@ -305,7 +280,6 @@ void TypeCheckerVisitor::visit(ReturnStm* stm) {
                                 expectedReturnType + "' en función '" +
                                 currentFunction + "'");
     } else {
-        // return vacío
         if (expectedReturnType != "void")
             throw runtime_error("TypeChecker: return sin valor en función '" +
                                 currentFunction +
@@ -321,12 +295,11 @@ void TypeCheckerVisitor::visit(DeleteStm* stm) {
 }
 
 void TypeCheckerVisitor::visit(ContinueStm* stm) {
-    // No requiere verificación de tipos
 }
 
 void TypeCheckerVisitor::visit(BreakStmt* stm) {
     if (stm->tiene_valor && stm->valor)
-        inferType(stm->valor); // El tipo de break-with-value lo verifica quien lo captura
+        inferType(stm->valor); 
 }
 
 void TypeCheckerVisitor::visit(SwitchStmt* stm) {
@@ -362,9 +335,6 @@ void TypeCheckerVisitor::visit(DeferStmt* stm) {
     if (stm->stmt) stm->stmt->accept(this);
 }
 
-// ============================================================
-// Expresiones
-// ============================================================
 
 Value TypeCheckerVisitor::visit(NumberExpDecimal* exp) {
     currentType = "int";
@@ -439,17 +409,17 @@ Value TypeCheckerVisitor::visit(BinaryExp* exp) {
             currentType = "float";  
             break;
 
-        case MENORI:   // <=
-        case MENOR:    // <
-        case MAYORI:   // >=
-        case MAYOR:    // >
+        case MENORI:   
+        case MENOR:   
+        case MAYORI:   
+        case MAYOR:   
             if (!isNumeric(leftType) || !isNumeric(rightType))
                 throw runtime_error("TypeChecker: comparación relacional requiere tipos numéricos");
             currentType = "bool";
             break;
 
-        case IGUALIGUAL:   // ==
-        case DIFERENTE_OP: // !=
+        case IGUALIGUAL:   
+        case DIFERENTE_OP: 
             if (!soncompatibles(leftType, rightType) && !soncompatibles(rightType, leftType))
                 throw runtime_error("TypeChecker: comparación de tipos incompatibles '" +
                                     leftType + "' y '" + rightType + "'");
@@ -463,7 +433,7 @@ Value TypeCheckerVisitor::visit(BinaryExp* exp) {
             currentType = "bool";
             break;
 
-        case REFERENCIA: // & (bitwise and o address — tratamos como int)
+        case REFERENCIA: 
             if (!isNumeric(leftType) || !isNumeric(rightType))
                 throw runtime_error("TypeChecker: operador & requiere tipos numéricos");
             currentType = "int";
@@ -505,7 +475,7 @@ Value TypeCheckerVisitor::visit(UnaryExp* exp) {
         case UnaryExp::DEREF:
             if (!isPointer(t))
                 throw runtime_error("TypeChecker: '*' desreferencia requiere puntero, se obtuvo '" + t + "'");
-            currentType = t.substr(1); // quitar el '*'
+            currentType = t.substr(1); 
             break;
         default:
             currentType = t;
@@ -515,11 +485,9 @@ Value TypeCheckerVisitor::visit(UnaryExp* exp) {
 }
 
 Value TypeCheckerVisitor::visit(FcallExp* exp) {
-    // Funciones internas del parser
     if (exp->nombre == "__try__") {
         if (!exp->argumentos.empty())
             inferType(exp->argumentos[0]);
-        // __try__ propaga el tipo interno quitando el prefijo de error
         if (!currentType.empty() && currentType[0] == '!')
             currentType = currentType.substr(1);
         return Value();
@@ -552,7 +520,7 @@ Value TypeCheckerVisitor::visit(FcallExp* exp) {
 
 Value TypeCheckerVisitor::visit(NewExp* exp) {
     exp->tipo->accept(this);
-    currentType = "*" + currentType; // new devuelve puntero
+    currentType = "*" + currentType;
     return Value();
 }
 
@@ -579,7 +547,6 @@ Value TypeCheckerVisitor::visit(PunteroExp* exp) {
 }
 
 Value TypeCheckerVisitor::visit(AlgoconcorchetesExp* exp) {
-    // expr[index]
     string baseType = inferType(exp->nombre);
     string indexType = inferType(exp->dentroexp);
 
@@ -587,20 +554,15 @@ Value TypeCheckerVisitor::visit(AlgoconcorchetesExp* exp) {
         throw runtime_error("TypeChecker: índice de array debe ser int, se obtuvo '" +
                             indexType + "'");
 
-    // Si es array tipo, extraemos el tipo elemento
-    // Arrays se representan como "[N]T" o simplemente T[]
-    // Aquí hacemos una heurística simple
     if (!baseType.empty() && baseType.back() == ']') {
-        // quitar [N] del frente
         auto pos = baseType.rfind(']');
         if (pos != string::npos)
             currentType = baseType.substr(pos + 1);
         else
             currentType = baseType;
     } else if (isPointer(baseType)) {
-        currentType = baseType.substr(1); // puntero indexado → elemento
+        currentType = baseType.substr(1);
     } else {
-        // tipo genérico: devolvemos mismo tipo (puede ser string → char)
         if (baseType == "string")
             currentType = "char";
         else
@@ -610,11 +572,9 @@ Value TypeCheckerVisitor::visit(AlgoconcorchetesExp* exp) {
 }
 
 Value TypeCheckerVisitor::visit(AlgoconcorchetesylistaExp* exp) {
-    // expr[a, b, ...]  (multi-índice)
     string baseType = inferType(exp->nombre);
     for (Exp* e : exp->argumentos)
         inferType(e);
-    // Por simplicidad devolvemos el mismo tipo base
     currentType = baseType;
     return Value();
 }
@@ -622,27 +582,22 @@ Value TypeCheckerVisitor::visit(AlgoconcorchetesylistaExp* exp) {
 Value TypeCheckerVisitor::visit(PuntoExp* exp) {
     string baseType = inferType(exp->exp);
 
-    // Unwrap opcional: expr.?
     if (exp->id == "__unwrap__") {
         if (!isOptional(baseType))
             throw runtime_error("TypeChecker: .? sobre tipo no opcional '" + baseType + "'");
-        currentType = baseType.substr(1); // quitar '?'
+        currentType = baseType.substr(1); 
         return Value();
     }
 
-    // Acceso a campo de struct
     auto it = structEnv.find(baseType);
     if (it == structEnv.end()) {
-        // Puede ser un optional de struct: ?NombreStruct
         string innerType = isOptional(baseType) ? baseType.substr(1) : baseType;
         it = structEnv.find(innerType);
         if (it == structEnv.end()) {
-            // Tipo nativo con propiedades (e.g. string.len)
             if (baseType == "string" && exp->id == "len") {
                 currentType = "int";
                 return Value();
             }
-            // Desconocido: lo dejamos pasar como unknown
             currentType = "unknown";
             return Value();
         }
@@ -659,7 +614,6 @@ Value TypeCheckerVisitor::visit(PuntoExp* exp) {
 }
 
 Value TypeCheckerVisitor::visit(LambdaExp* exp) {
-    // Construimos el tipo funcional como string "fn(T1,T2)->Ret"
     string prevFunction = currentFunction;
     string prevReturn   = expectedReturnType;
     bool   prevHasRet   = hasReturn;
@@ -689,12 +643,7 @@ Value TypeCheckerVisitor::visit(LambdaExp* exp) {
     return Value();
 }
 
-// ============================================================
-// Tipos
-// ============================================================
-
 void TypeCheckerVisitor::visit(IdType* tipo) {
-    // Mapeo de nombres de tipo a representación interna
     const string& id = tipo->id;
     if (id == "i32" || id == "i64" || id == "u32" || id == "u64" ||
         id == "i8"  || id == "u8"  || id == "isize" || id == "usize" ||
@@ -717,7 +666,7 @@ void TypeCheckerVisitor::visit(IdType* tipo) {
     else if (id == "anytype" || id == "anyopaque")
         currentType = "any";
     else
-        currentType = id; // nombre de struct, enum, etc.
+        currentType = id; 
 }
 
 void TypeCheckerVisitor::visit(PointerType* tipo) {
@@ -728,7 +677,6 @@ void TypeCheckerVisitor::visit(PointerType* tipo) {
 void TypeCheckerVisitor::visit(ArrayType* tipo) {
     tipo->tipo->accept(this);
     string inner = currentType;
-    // Representamos [N]T como "[N]T" string (opaco para el checker)
     if (tipo->exp1) {
         tipo->exp1->accept(this);
     }
