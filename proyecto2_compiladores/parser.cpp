@@ -59,7 +59,7 @@ Programa* Parser::parseProgram() {
     Programa* ast = parseP();
     if (!isAtEnd())
         throw runtime_error("Error sintáctico: tokens inesperados al final");
-    cerr << "Parseo exitoso" << endl;
+    cout << "Parseo exitoso" << endl;
     return ast;
 }
 
@@ -315,17 +315,12 @@ Stmt* Parser::parseStmt() {
     if (check(Token::VAR)) {
         VarDec* vd = (VarDec*)parseVar_dec();
         match(Token::SEMICOL);
-        // Wrapeamos VarDec en un AsignStmt con exp directa
-        // (el AST no tiene VarDecStmt, pero podemos crear uno ad-hoc)
-        // Se devuelve como BodyStmt con cuerpo vacío y la var colgada;
-        // La forma más limpia es reutilizar AsignStmt:
         AsignStmt* a = new AsignStmt(vd->nombre, vd->exp);
         vd->exp = nullptr;
-        delete vd; // liberamos el wrapper
+        delete vd; 
         return a;
     }
 
-    // --- const local ---
     if (check(Token::CONST)) {
         ConstDec* cd = (ConstDec*)parseConts_dec();
         match(Token::SEMICOL);
@@ -365,12 +360,12 @@ Stmt* Parser::parseStmt() {
     }
 
     if (match(Token::BREAK)) {
-        if (match(Token::DOSPUNTOS)) {          // ← break : label expr ;
+        if (match(Token::DOSPUNTOS)) {          
             match(Token::ID);
             Exp* val = parseExpr();
             match(Token::SEMICOL);
             return new BreakStmt(val);
-        }                                        // ← llave que faltaba
+        }                                      
         if (check(Token::SEMICOL) || check(Token::RBRACE)) {
             match(Token::SEMICOL);
             return new BreakStmt();
@@ -458,10 +453,8 @@ Stmt* Parser::parseStmt() {
         advance();
         string nombre = previous->text;
 
-        // Construimos el lvalue como expresión postfix
         Exp* lval = new IdExp(nombre);
 
-        // Seguimos consumiendo .campo, [idx], etc.
         while (true) {
             if (match(Token::PUNTO)) {
                 if (match(Token::QUESTION)) {
@@ -492,28 +485,24 @@ Stmt* Parser::parseStmt() {
             }
         }
 
-        // Ahora sí esperamos el =
         expect(Token::ASSIGN, "Se esperaba '=' en asignación");
         Exp* rval = parseExpr();
         match(Token::SEMICOL);
 
-        // Si el lvalue es un IdExp simple, usamos AsignStmt normal
         if (IdExp* id = dynamic_cast<IdExp*>(lval)) {
             delete lval;
             return new AsignStmt(nombre, rval);
         }
 
-        // Si es campo o índice, usamos DerefAssignStmt (o el nodo que tengas)
         return new DerefAssignStmt(lval, rval);
     }
 
-    // Al inicio de parseStmt(), antes de los demás checks:
     if (match(Token::STAR)) {
     Exp* lval = parsePostfix();
     expect(Token::ASSIGN, "Se esperaba '=' después de expresión desreferenciada");
     Exp* rval = parseExpr();
     match(Token::SEMICOL);
-    return new DerefAssignStmt(lval, rval);  // ← CORRECTO
+    return new DerefAssignStmt(lval, rval);  
 }
 
     throw runtime_error("Error sintáctico: sentencia inesperada - token: '" 
@@ -565,9 +554,8 @@ Type* Parser::parseType() {
     if (match(Token::ID)) {
         string id = previous->text;
         if (match(Token::NOT)) {
-            // Es error-union: <ident>!<type>
             Type* inner = parseType();
-            return new ErrorType(inner); // ErrorType guarda el tipo ok; el nombre se pierde
+            return new ErrorType(inner); 
         }
         return new IdType(id);
     }
@@ -576,7 +564,7 @@ Type* Parser::parseType() {
 }
 
 // =============================
-// Expresiones (precedencia ascendente)
+// Expresiones 
 // =============================
 
 // <expr> ::= try <expr> | comptime <expr> | <logic-expr>
@@ -601,7 +589,7 @@ Exp* Parser::parseExpr() {
                 match(Token::ID); 
                 error_var = previous->text; 
             }
-            expect(Token::PIPE, "Se esperaba '|' de cierre en catch");  // ← falta este expect
+            expect(Token::PIPE, "Se esperaba '|' de cierre en catch"); 
         }
         Body* catch_body = parseBody();
         
@@ -703,10 +691,8 @@ Exp* Parser::parsePostfix() {
 
     while (true) {
         if (match(Token::LCORCHETE)) {
-            // <postfix>[<expr>]  o  <postfix>[<arg-list>]
             Exp* first_arg = parseLogicExp();
             if (match(Token::COMA)) {
-                // arg-list
                 vector<Exp* > args;
                 args.push_back(first_arg);
                 args.push_back(parseLogicExp());
@@ -719,25 +705,21 @@ Exp* Parser::parsePostfix() {
                 e = new AlgoconcorchetesExp(e, first_arg);
             }
         } else if (match(Token::PUNTO)) {
-            // .?  (unwrap opcional)
             if (match(Token::QUESTION)) {
-                // Representamos .? como PuntoExp con id especial
                 e = new PuntoExp(e, "__unwrap__");
             } else {
                 expect(Token::ID, "Se esperaba identificador después de '.'");
                 e = new PuntoExp(e, previous->text);
             }
         } else if (check(Token::DOTQUESTION)) {
-            // Token .? combinado (el scanner lo produce)
             advance();
             e = new PuntoExp(e, "__unwrap__");
         }  else if (check(Token::OR) && current->text == "orelse") {
             match(Token::OR);
             Exp* fallback = parseLogicExp();
             e = new BinaryExp(e, fallback, OR);
-        } else if (match(Token::LPAREN)) {            // Llamada a función: f(args)
+        } else if (match(Token::LPAREN)) {           
             FcallExp* call = new FcallExp();
-            // Extraemos el nombre si e es IdExp
             if (IdExp* id = dynamic_cast<IdExp* >(e)) {
                 call->nombre = id->value;
                 delete e;
@@ -831,10 +813,8 @@ Exp* Parser::parsePrimaryExp() {
         return new LambdaExp(ret, body, ids, tipos);
     }
 
-    // Identificador (puede ser llamada a función o variable)
     if (match(Token::ID)) {
         string nombre = previous->text;
-        // Llamada a función  f(...)  — el postfix lo manejará el nivel superior
         return new IdExp(nombre);
     }
 
