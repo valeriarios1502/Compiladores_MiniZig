@@ -22,7 +22,6 @@ private:
     bool isAtEnd();
     void expect(Token::Type ttype, const string& msg);
 
-    // ── Top-level ────────────────────────────────────────────
     Programa*  parseP();
     Top_dec*   parseFnOrTemplate();
     Top_dec*   parseVar_dec();
@@ -32,17 +31,13 @@ private:
     Top_dec*   parsefn_dec();
     Top_dec*   parsetemplate();
 
-    // ── Helpers ──────────────────────────────────────────────
     void       parseParamList(vector<string>& ids, vector<Type*>& tipos);
 
-    // ── Cuerpo y sentencias ──────────────────────────────────
     Body*      parseBody();
     Stmt*      parseStmt();
 
-    // ── Tipos ────────────────────────────────────────────────
     Type*      parseType();
 
-    // ── Expresiones (precedencia) ────────────────────────────
     Exp*       parseExpr();
     Exp*       parseLogicExp();
     Exp*       parseCompareExp();
