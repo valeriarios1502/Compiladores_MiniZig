@@ -3,7 +3,7 @@ import subprocess
 import shutil
 
 # Archivos c++
-programa = ["main.cpp", "scanner.cpp", "token.cpp", "parser.cpp", "ast.cpp", "visitor.cpp"]
+programa = ["main.cpp", "scanner.cpp", "token.cpp", "parser.cpp", "ast.cpp", "visitor.cpp", "Typechecker.cpp"]
 ejecutable = "Proyecto2.exe"
 
 # Compilar

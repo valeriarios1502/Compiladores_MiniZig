@@ -1,23 +1,9 @@
-var x : i32 = 42;
-var y = 3.14;
-var h : u32 = 0xFF;
-var b : u8  = 0b1010;
-var s : u8  = "hola mundo";
-var ch : u8 = 'A';
-var flag = true;
-var nada = null;
-var indef = undefined;
-const PI : f64 = 3.14159;
-const MAX = 100;
+comptime {
+  const TAM = 8 * 4;
+}
 
 pub fn main () void {
-  print(x);
-  print(y);
-  print(h);
-  print(b);
-  print(s);
-  print(ch);
-  print(flag);
-  print(PI);
-  print(MAX);
+  var buffer : [TAM]u8 = undefined;
+  buffer[0] = 65;
+  print(buffer[0]);
 }

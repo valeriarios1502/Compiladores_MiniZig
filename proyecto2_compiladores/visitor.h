@@ -135,6 +135,8 @@ public:
     bool hayComptimeGlobal = false;
 
     std::unordered_map<std::string, std::string> globalTypes; 
+    std::unordered_map<std::string, std::string> localTypes;
+    std::unordered_map<std::string, std::string> functionReturnTypes;
     std::unordered_set<std::string> globalNames;  
     std::unordered_map<std::string, int> posicion;
 
@@ -147,6 +149,8 @@ public:
 
     std::unordered_map<std::string,
         std::unordered_map<std::string, int>> structFieldOffsets;
+    std::unordered_map<std::string,
+        std::unordered_map<std::string, std::string>> structFieldTypes;
 
     std::unordered_map<std::string, int> structFieldCount;
 

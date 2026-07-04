@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <sstream>
 #include "ast.h"
 #include "visitor.h"
 #include <cstdint>
@@ -66,13 +67,123 @@ static string escapeString(const string& s) {
     return out;
 }
 
+static string runtimeCallName(string target) {
+#ifdef _WIN32
+    const string plt = "@PLT";
+    if (target.size() >= plt.size() &&
+        target.compare(target.size() - plt.size(), plt.size(), plt) == 0)
+        target.erase(target.size() - plt.size());
+#endif
+    return target;
+}
+
+static string typeNameFromType(Type* tipo) {
+    if (!tipo) return "";
+
+    if (IdType* it = dynamic_cast<IdType*>(tipo)) {
+        const string& id = it->id;
+        if (id == "i32" || id == "i64" || id == "u32" || id == "u64" ||
+            id == "i8" || id == "u8" || id == "isize" || id == "usize" ||
+            id == "comptime_int")
+            return "int";
+        if (id == "f32" || id == "f64" || id == "comptime_float")
+            return "float";
+        if (id == "bool") return "bool";
+        if (id == "void") return "void";
+        if (id == "str" || id == "[]u8" || id == "[]const u8")
+            return "string";
+        if (id == "char") return "char";
+        return id;
+    }
+    if (PointerType* pt = dynamic_cast<PointerType*>(tipo))
+        return "*" + typeNameFromType(pt->tipo);
+    if (ArrayType* at = dynamic_cast<ArrayType*>(tipo))
+        return "[]" + typeNameFromType(at->tipo);
+    if (OptionalType* ot = dynamic_cast<OptionalType*>(tipo))
+        return "?" + typeNameFromType(ot->tipo);
+    if (ErrorType* et = dynamic_cast<ErrorType*>(tipo))
+        return "!" + typeNameFromType(et->tipo);
+    if (UnionType* ut = dynamic_cast<UnionType*>(tipo))
+        return ut->nombre;
+    if (EnumType* et = dynamic_cast<EnumType*>(tipo))
+        return et->nombre;
+    return "";
+}
+
 static std::string inferGlobalType(Exp* exp) {
     if (!exp)                                  return "int";
     if (dynamic_cast<NumberExpFlotante*>(exp)) return "float";
-    if (dynamic_cast<StringExp*>(exp))         return "str";
+    if (dynamic_cast<StringExp*>(exp))         return "string";
     if (dynamic_cast<CharExp*>(exp))           return "char";
     if (dynamic_cast<BoolExp*>(exp))           return "bool";
     return "int";
+}
+
+static string inferCodegenType(GenCodeVisitor* gen, Exp* exp) {
+    if (!exp) return "";
+    if (dynamic_cast<NumberExpDecimal*>(exp)) return "int";
+    if (dynamic_cast<NumberExpFlotante*>(exp)) return "float";
+    if (dynamic_cast<StringExp*>(exp)) return "string";
+    if (dynamic_cast<CharExp*>(exp)) return "char";
+    if (dynamic_cast<BoolExp*>(exp)) return "bool";
+    if (dynamic_cast<NullExp*>(exp)) return "null";
+    if (dynamic_cast<UndefinedExp*>(exp)) return "undefined";
+
+    if (IdExp* id = dynamic_cast<IdExp*>(exp)) {
+        auto localIt = gen->localTypes.find(id->value);
+        if (localIt != gen->localTypes.end()) return localIt->second;
+        auto globalIt = gen->globalTypes.find(id->value);
+        if (globalIt != gen->globalTypes.end()) return globalIt->second;
+        return "";
+    }
+
+    if (NewExp* ne = dynamic_cast<NewExp*>(exp))
+        return typeNameFromType(ne->tipo);
+
+    if (PuntoExp* pe = dynamic_cast<PuntoExp*>(exp)) {
+        string baseType = inferCodegenType(gen, pe->exp);
+        auto structIt = gen->structFieldTypes.find(baseType);
+        if (structIt != gen->structFieldTypes.end()) {
+            auto fieldIt = structIt->second.find(pe->id);
+            if (fieldIt != structIt->second.end())
+                return fieldIt->second;
+        }
+        return "";
+    }
+
+    if (AlgoconcorchetesExp* ae = dynamic_cast<AlgoconcorchetesExp*>(exp)) {
+        string arrType = inferCodegenType(gen, ae->nombre);
+        if (arrType.rfind("[]", 0) == 0)
+            return arrType.substr(2);
+        return "int";
+    }
+
+    if (UnaryExp* ue = dynamic_cast<UnaryExp*>(exp)) {
+        string inner = inferCodegenType(gen, ue->exp);
+        if (ue->op == UnaryExp::ADDRESS) return "*" + inner;
+        if (ue->op == UnaryExp::DEREF && !inner.empty() && inner[0] == '*')
+            return inner.substr(1);
+        if (ue->op == UnaryExp::NOT_OP) return "bool";
+        return inner;
+    }
+
+    if (BinaryExp* be = dynamic_cast<BinaryExp*>(exp)) {
+        if (be->op == MENOR || be->op == MENORI || be->op == MAYOR ||
+            be->op == MAYORI || be->op == IGUALIGUAL ||
+            be->op == DIFERENTE_OP || be->op == AND || be->op == OR)
+            return "bool";
+        string left = inferCodegenType(gen, be->left);
+        string right = inferCodegenType(gen, be->right);
+        if (left == "float" || right == "float") return "float";
+        return "int";
+    }
+
+    if (FcallExp* fc = dynamic_cast<FcallExp*>(exp)) {
+        auto it = gen->functionReturnTypes.find(fc->nombre);
+        if (it != gen->functionReturnTypes.end()) return it->second;
+    }
+
+    return "";
 }
 
 //  GenCodeVisitor
@@ -82,7 +193,7 @@ void GenCodeVisitor::emitAlignedCall(const string& target) {
     cout << "    movq  %rsp, %r12" << endl;
     cout << "    andq  $-16, %rsp" << endl;
     cout << "    xorq  %rax, %rax" << endl;
-    cout << "    call  " << target << endl;
+    cout << "    call  " << runtimeCallName(target) << endl;
     cout << "    movq  %r12, %rsp" << endl;
     cout << "    popq  %r12"       << endl;
 }
@@ -101,9 +212,29 @@ void GenCodeVisitor::emitStructBaseAddress(Exp* expr) {
 }
 
 int GenCodeVisitor::getFieldOffset(Exp* base, const string& fieldName) {
-    for (auto& [sname, fields] : structFieldOffsets) {
-        auto it = fields.find(fieldName);
-        if (it != fields.end())
+    if (IdExp* id = dynamic_cast<IdExp*>(base)) {
+        string baseType;
+        auto typeIt = localTypes.find(id->value);
+        if (typeIt != localTypes.end())
+            baseType = typeIt->second;
+        else {
+            auto globalIt = globalTypes.find(id->value);
+            if (globalIt != globalTypes.end())
+                baseType = globalIt->second;
+        }
+        if (!baseType.empty()) {
+            auto structIt = structFieldOffsets.find(baseType);
+            if (structIt != structFieldOffsets.end()) {
+                auto fieldIt = structIt->second.find(fieldName);
+                if (fieldIt != structIt->second.end())
+                    return fieldIt->second;
+            }
+        }
+    }
+
+    for (auto& entry : structFieldOffsets) {
+        auto it = entry.second.find(fieldName);
+        if (it != entry.second.end())
             return it->second;
     }
     cerr << "[GenCode] Advertencia: campo '" << fieldName << "' no encontrado → offset 0\n";
@@ -124,7 +255,7 @@ void GenCodeVisitor::emitGlobalVarDec(VarDec* vd) {
         int64_t bits = 0;
         memcpy(&bits, &val, sizeof(bits));
         cout << vd->nombre << ": .quad " << bits << endl;
-    } else if (gtype == "str") {
+    } else if (gtype == "string") {
         string lbl = internString(dynamic_cast<StringExp*>(vd->exp)->valor);
         cout << vd->nombre << ": .quad " << lbl << endl;
     } else if (gtype == "char") {
@@ -159,6 +290,19 @@ void GenCodeVisitor::emitGlobalConstDec(ConstDec* cd) {
         int64_t bits = 0;
         memcpy(&bits, &val, sizeof(bits));
         cout << cd->nombre << ": .quad " << bits << endl;
+    } else if (gtype == "string") {
+        string lbl = internString(dynamic_cast<StringExp*>(cd->exp)->valor);
+        cout << cd->nombre << ": .quad " << lbl << endl;
+    } else if (gtype == "char") {
+        int val = 0;
+        if (CharExp* ce = dynamic_cast<CharExp*>(cd->exp))
+            val = (unsigned char)ce->valor;
+        cout << cd->nombre << ": .quad " << val << endl;
+    } else if (gtype == "bool") {
+        int val = 0;
+        if (BoolExp* be = dynamic_cast<BoolExp*>(cd->exp))
+            val = (be->booleano == "true") ? 1 : 0;
+        cout << cd->nombre << ": .quad " << val << endl;
     } else {
         int64_t val = 0;
         if (NumberExpDecimal* ne = dynamic_cast<NumberExpDecimal*>(cd->exp))
@@ -170,24 +314,38 @@ void GenCodeVisitor::emitGlobalConstDec(ConstDec* cd) {
 //  GenCodeVisitor — Programa, Fundec, Template
 
 void GenCodeVisitor::gencode(Programa* programa) {
+    hayComptimeGlobal = false;
+
     for (Top_dec* d : programa->declist) {
         if (Structdec* sd = dynamic_cast<Structdec*>(d)) {
-            for (size_t i = 0; i < sd->id_parametros.size(); ++i)
+            for (size_t i = 0; i < sd->id_parametros.size(); ++i) {
                 structFieldOffsets[sd->nombre][sd->id_parametros[i]] = (int)i * 8;
+                if (i < sd->tipo_parametros.size())
+                    structFieldTypes[sd->nombre][sd->id_parametros[i]] =
+                        typeNameFromType(sd->tipo_parametros[i]);
+            }
             structFieldCount[sd->nombre] = (int)sd->id_parametros.size();
         }
         if (VarDec* vd = dynamic_cast<VarDec*>(d)) {
             if (UnionType* ut = dynamic_cast<UnionType*>(vd->tipo)) {
-                for (size_t i = 0; i < ut->campo_nombres.size(); ++i)
+                for (size_t i = 0; i < ut->campo_nombres.size(); ++i) {
                     structFieldOffsets[ut->nombre][ut->campo_nombres[i]] = (int)i * 8;
+                    if (i < ut->campo_tipos.size())
+                        structFieldTypes[ut->nombre][ut->campo_nombres[i]] =
+                            typeNameFromType(ut->campo_tipos[i]);
+                }
                 structFieldCount[ut->nombre] = (int)ut->campo_nombres.size();
             }
         }
     }
 
     for (Top_dec* d : programa->declist)
-        if (Fundec* fd = dynamic_cast<Fundec*>(d))
+        if (Fundec* fd = dynamic_cast<Fundec*>(d)) {
             funEnv[fd->nombre] = fd;
+            functionReturnTypes[fd->nombre] = typeNameFromType(fd->tipo);
+            if (fd->nombre == "__comptime__")
+                hayComptimeGlobal = true;
+        }
 
     cout << ".section .data"                           << endl;
     cout << "print_int_fmt:   .string \"%ld\\n\""     << endl;
@@ -208,6 +366,8 @@ void GenCodeVisitor::gencode(Programa* programa) {
 
     cout << ".section .text" << endl;
     cout << ".globl main"    << endl;
+    if (hayComptimeGlobal)
+        cout << ".globl _comptime_init" << endl;
 
     programa->accept(this);
 
@@ -236,25 +396,37 @@ void GenCodeVisitor::visit(Fundec* fd) {
     string prevLoopEnd   = currentLoopEnd;
     string prevLoopStart = currentLoopStart;
     auto   prevPosicion  = posicion;
+    auto   prevLocalTypes = localTypes;
     int    prevContador  = varContador;
 
     currentFunction  = asmName;
     currentLoopEnd   = "";
     currentLoopStart = "";
     posicion.clear();
+    localTypes.clear();
     varContador = 1;
 
-    for (size_t i = 0; i < fd->id_parametros.size(); ++i)
+    for (size_t i = 0; i < fd->id_parametros.size(); ++i) {
         posicion[fd->id_parametros[i]] = varContador++;
+        if (i < fd->tipo_parametros.size())
+            localTypes[fd->id_parametros[i]] = typeNameFromType(fd->tipo_parametros[i]);
+    }
 
-    const int FRAME_SLOTS = 128;
-    int frameBytes = alignFrame(FRAME_SLOTS);
+    ostringstream bodyBuffer;
+    streambuf* oldBuffer = cout.rdbuf(bodyBuffer.rdbuf());
+
+    if (fd->cuerpo) fd->cuerpo->accept(this);
+
+    cout.rdbuf(oldBuffer);
+
+    int frameBytes = alignFrame(max(1, varContador - 1));
 
     cout << endl;
     cout << asmName << ":" << endl;
     cout << "    pushq %rbp"                        << endl;
     cout << "    movq  %rsp, %rbp"                  << endl;
-    cout << "    subq  $" << frameBytes << ", %rsp" << endl;
+    if (frameBytes > 0)
+        cout << "    subq  $" << frameBytes << ", %rsp" << endl;
 
     for (size_t i = 0; i < fd->id_parametros.size() && i < (size_t)MAX_REG_ARGS; ++i)
         cout << "    movq  " << argRegs[i] << ", " << offset(fd->id_parametros[i]) << endl;
@@ -262,7 +434,7 @@ void GenCodeVisitor::visit(Fundec* fd) {
     if (fd->nombre == "main" && hayComptimeGlobal)
         emitAlignedCall("_comptime_init");
 
-    if (fd->cuerpo) fd->cuerpo->accept(this);
+    cout << bodyBuffer.str();
 
     cout << "    xorq  %rax, %rax" << endl;
     cout << "    leave"            << endl;
@@ -272,6 +444,7 @@ void GenCodeVisitor::visit(Fundec* fd) {
     currentLoopEnd   = prevLoopEnd;
     currentLoopStart = prevLoopStart;
     posicion         = prevPosicion;
+    localTypes       = prevLocalTypes;
     varContador      = prevContador;
 }
 
@@ -280,30 +453,42 @@ void GenCodeVisitor::visit(Template* t) {
     string prevLoopEnd   = currentLoopEnd;
     string prevLoopStart = currentLoopStart;
     auto   prevPosicion  = posicion;
+    auto   prevLocalTypes = localTypes;
     int    prevContador  = varContador;
 
     currentFunction  = t->id1;
     currentLoopEnd   = "";
     currentLoopStart = "";
     posicion.clear();
+    localTypes.clear();
     varContador = 1;
 
-    for (size_t i = 0; i < t->id_parametros.size(); ++i)
+    for (size_t i = 0; i < t->id_parametros.size(); ++i) {
         posicion[t->id_parametros[i]] = varContador++;
+        if (i < t->tipo_parametros.size())
+            localTypes[t->id_parametros[i]] = typeNameFromType(t->tipo_parametros[i]);
+    }
 
-    const int FRAME_SLOTS = 128;
-    int frameBytes = alignFrame(FRAME_SLOTS);
+    ostringstream bodyBuffer;
+    streambuf* oldBuffer = cout.rdbuf(bodyBuffer.rdbuf());
+
+    if (t->block) t->block->accept(this);
+
+    cout.rdbuf(oldBuffer);
+
+    int frameBytes = alignFrame(max(1, varContador - 1));
 
     cout << endl;
     cout << t->id1 << ":" << endl;
     cout << "    pushq %rbp"                        << endl;
     cout << "    movq  %rsp, %rbp"                  << endl;
-    cout << "    subq  $" << frameBytes << ", %rsp" << endl;
+    if (frameBytes > 0)
+        cout << "    subq  $" << frameBytes << ", %rsp" << endl;
 
     for (size_t i = 0; i < t->id_parametros.size() && i < (size_t)MAX_REG_ARGS; ++i)
         cout << "    movq  " << argRegs[i] << ", " << offset(t->id_parametros[i]) << endl;
 
-    if (t->block) t->block->accept(this);
+    cout << bodyBuffer.str();
 
     cout << "    xorq  %rax, %rax" << endl;
     cout << "    leave"            << endl;
@@ -313,6 +498,7 @@ void GenCodeVisitor::visit(Template* t) {
     currentLoopEnd   = prevLoopEnd;
     currentLoopStart = prevLoopStart;
     posicion         = prevPosicion;
+    localTypes       = prevLocalTypes;
     varContador      = prevContador;
 }
 
@@ -325,6 +511,13 @@ void GenCodeVisitor::visit(Body* b) {
 
 void GenCodeVisitor::visit(VarDec* vd) {
     if (currentFunction.empty()) return;
+
+    string declaredType = vd->tienetipo ? typeNameFromType(vd->tipo) : "";
+    string exprType = inferCodegenType(this, vd->exp);
+    if (!declaredType.empty())
+        localTypes[vd->nombre] = declaredType;
+    else if (!exprType.empty())
+        localTypes[vd->nombre] = exprType;
 
     if (vd->tienetipo && vd->tipo) {
         if (IdType* it = dynamic_cast<IdType*>(vd->tipo)) {
@@ -369,6 +562,13 @@ void GenCodeVisitor::visit(VarDec* vd) {
 void GenCodeVisitor::visit(ConstDec* cd) {
     if (currentFunction.empty()) return;
 
+    string declaredType = cd->tienetipo ? typeNameFromType(cd->tipo) : "";
+    string exprType = inferCodegenType(this, cd->exp);
+    if (!declaredType.empty())
+        localTypes[cd->nombre] = declaredType;
+    else if (!exprType.empty())
+        localTypes[cd->nombre] = exprType;
+
     if (posicion.find(cd->nombre) == posicion.end())
         posicion[cd->nombre] = varContador++;
 
@@ -385,11 +585,42 @@ void GenCodeVisitor::visit(AsignStmt* stm) {
         if (stm->exp) stm->exp->accept(this);
         return;
     }
+
+    string declaredType = stm->hasDeclaredType ? typeNameFromType(stm->declaredType) : "";
+    string exprType = inferCodegenType(this, stm->exp);
+    if (!declaredType.empty())
+        localTypes[stm->variable] = declaredType;
+    else if (!exprType.empty())
+        localTypes[stm->variable] = exprType;
+
+    if (stm->hasDeclaredType && stm->declaredType) {
+        if (ArrayType* at = dynamic_cast<ArrayType*>(stm->declaredType)) {
+            int arraySize = 8;
+            if (NumberExpDecimal* ne = dynamic_cast<NumberExpDecimal*>(at->exp1))
+                arraySize = ne->value;
+
+            int pointerSlot = varContador++;
+            int baseSlot = varContador;
+            posicion[stm->variable] = pointerSlot;
+            varContador += arraySize;
+
+            if (stm->exp && !dynamic_cast<UndefinedExp*>(stm->exp)) {
+                stm->exp->accept(this);
+            } else {
+                cout << "    leaq  " << (baseSlot * -8) << "(%rbp), %rax" << endl;
+            }
+            cout << "    movq  %rax, " << offset(stm->variable) << endl;
+            return;
+        }
+    }
+
     if (posicion.find(stm->variable) == posicion.end())
         posicion[stm->variable] = varContador++;
 
-    stm->exp->accept(this);
-    cout << "    movq  %rax, " << offset(stm->variable) << endl;
+    if (stm->exp) {
+        stm->exp->accept(this);
+        cout << "    movq  %rax, " << offset(stm->variable) << endl;
+    }
 }
 
 void GenCodeVisitor::visit(DerefAssignStmt* stm) {
@@ -425,12 +656,7 @@ void GenCodeVisitor::visit(DerefAssignStmt* stm) {
 
 void GenCodeVisitor::visit(PrintStmt* stm) {
     Exp* e = stm->exp;
-    string knownType = "";
-    if (IdExp* id = dynamic_cast<IdExp*>(e)) {
-        auto it = globalTypes.find(id->value);
-        if (it != globalTypes.end())
-            knownType = it->second;
-    }
+    string knownType = inferCodegenType(this, e);
 
     if (knownType == "bool") {
         e->accept(this);
@@ -447,7 +673,7 @@ void GenCodeVisitor::visit(PrintStmt* stm) {
         cout << "    movq  %rsp, %r12"                     << endl;
         cout << "    andq  $-16, %rsp"                     << endl;
         cout << "    xorq  %rax, %rax"                     << endl;
-        cout << "    call  puts@PLT"                       << endl;
+        cout << "    call  " << runtimeCallName("puts@PLT") << endl;
         cout << "    movq  %r12, %rsp"                     << endl;
         cout << "    popq  %r12"                           << endl;
         return;
@@ -460,7 +686,7 @@ void GenCodeVisitor::visit(PrintStmt* stm) {
         cout << "    movq  %rsp, %r12"                 << endl;
         cout << "    andq  $-16, %rsp"                 << endl;
         cout << "    xorq  %rax, %rax"                 << endl;
-        cout << "    call  puts@PLT"                   << endl;
+        cout << "    call  " << runtimeCallName("puts@PLT") << endl;
         cout << "    movq  %r12, %rsp"                 << endl;
         cout << "    popq  %r12"                       << endl;
         return;
@@ -476,19 +702,19 @@ void GenCodeVisitor::visit(PrintStmt* stm) {
         cout << "    movq  %rax, %xmm0"                 << endl;
         cout << "    leaq  print_float_fmt(%rip), %rdi" << endl;
         cout << "    movq  $1, %rax"                     << endl;
-        cout << "    call  printf@PLT"                   << endl;
-    } else if (knownType == "str" || dynamic_cast<StringExp*>(e)) {
+        cout << "    call  " << runtimeCallName("printf@PLT") << endl;
+    } else if (knownType == "string" || knownType == "str" || dynamic_cast<StringExp*>(e)) {
         cout << "    leaq  print_str_fmt(%rip), %rdi"   << endl;
         cout << "    xorq  %rax, %rax"                   << endl;
-        cout << "    call  printf@PLT"                   << endl;
+        cout << "    call  " << runtimeCallName("printf@PLT") << endl;
     } else if (knownType == "char" || dynamic_cast<CharExp*>(e)) {
         cout << "    leaq  print_char_fmt(%rip), %rdi"  << endl;
         cout << "    xorq  %rax, %rax"                   << endl;
-        cout << "    call  printf@PLT"                   << endl;
+        cout << "    call  " << runtimeCallName("printf@PLT") << endl;
     } else {
         cout << "    leaq  print_int_fmt(%rip), %rdi"   << endl;
         cout << "    xorq  %rax, %rax"                   << endl;
-        cout << "    call  printf@PLT"                   << endl;
+        cout << "    call  " << runtimeCallName("printf@PLT") << endl;
     }
 
     cout << "    movq  %r12, %rsp" << endl;
@@ -723,6 +949,79 @@ Value GenCodeVisitor::visit(IdExp* exp) {
 }
 
 Value GenCodeVisitor::visit(BinaryExp* exp) {
+    string leftType = inferCodegenType(this, exp->left);
+    string rightType = inferCodegenType(this, exp->right);
+    bool usesFloat = (leftType == "float" || rightType == "float");
+
+    if (usesFloat && exp->op != MODULO_OP && exp->op != AND &&
+        exp->op != OR && exp->op != REFERENCIA) {
+        exp->right->accept(this);
+        if (rightType == "float")
+            cout << "    movq  %rax, %xmm1" << endl;
+        else
+            cout << "    cvtsi2sdq %rax, %xmm1" << endl;
+
+        exp->left->accept(this);
+        if (leftType == "float")
+            cout << "    movq  %rax, %xmm0" << endl;
+        else
+            cout << "    cvtsi2sdq %rax, %xmm0" << endl;
+
+        switch (exp->op) {
+            case PLUS_OP:
+                cout << "    addsd %xmm1, %xmm0" << endl;
+                cout << "    movq  %xmm0, %rax" << endl;
+                break;
+            case MINUS_OP:
+                cout << "    subsd %xmm1, %xmm0" << endl;
+                cout << "    movq  %xmm0, %rax" << endl;
+                break;
+            case MUL_OP:
+                cout << "    mulsd %xmm1, %xmm0" << endl;
+                cout << "    movq  %xmm0, %rax" << endl;
+                break;
+            case DIV_OP:
+                cout << "    divsd %xmm1, %xmm0" << endl;
+                cout << "    movq  %xmm0, %rax" << endl;
+                break;
+            case MENOR:
+                cout << "    ucomisd %xmm1, %xmm0" << endl;
+                cout << "    setb  %al" << endl;
+                cout << "    movzbq %al, %rax" << endl;
+                break;
+            case MENORI:
+                cout << "    ucomisd %xmm1, %xmm0" << endl;
+                cout << "    setbe %al" << endl;
+                cout << "    movzbq %al, %rax" << endl;
+                break;
+            case MAYOR:
+                cout << "    ucomisd %xmm1, %xmm0" << endl;
+                cout << "    seta  %al" << endl;
+                cout << "    movzbq %al, %rax" << endl;
+                break;
+            case MAYORI:
+                cout << "    ucomisd %xmm1, %xmm0" << endl;
+                cout << "    setae %al" << endl;
+                cout << "    movzbq %al, %rax" << endl;
+                break;
+            case IGUALIGUAL:
+                cout << "    ucomisd %xmm1, %xmm0" << endl;
+                cout << "    sete  %al" << endl;
+                cout << "    movzbq %al, %rax" << endl;
+                break;
+            case DIFERENTE_OP:
+                cout << "    ucomisd %xmm1, %xmm0" << endl;
+                cout << "    setne %al" << endl;
+                cout << "    movzbq %al, %rax" << endl;
+                break;
+            default:
+                cerr << "[GenCode] Operador float no soportado (op=" << exp->op << ")\n";
+                cout << "    xorq  %rax, %rax" << endl;
+                break;
+        }
+        return Value();
+    }
+
     exp->right->accept(this);
     cout << "    pushq %rax" << endl;   
     exp->left->accept(this);          

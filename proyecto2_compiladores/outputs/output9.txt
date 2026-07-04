@@ -1,4 +1,5 @@
 === STDOUT ===
+Parseo exitoso
 __ASSEMBLY_UNOPTIMIZED_BEGIN__
 .section .data
 print_int_fmt:   .string "%ld\n"
@@ -17,7 +18,7 @@ LIMITE: .quad 100
 clamp:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $32, %rsp
     movq  %rdi, -8(%rbp)
     movq  %rsi, -16(%rbp)
     movq  %rdx, -24(%rbp)
@@ -61,7 +62,7 @@ endif_1:
 buscarEn:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $48, %rsp
     movq  %rdi, -8(%rbp)
     movq  %rsi, -16(%rbp)
     movq  %rdx, -24(%rbp)
@@ -117,13 +118,13 @@ while_end_5:
 main:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $64, %rsp
     movq  $512, %rdi
     pushq %r12
     movq  %rsp, %r12
     andq  $-16, %rsp
     xorq  %rax, %rax
-    call  malloc@PLT
+    call  malloc
     movq  %r12, %rsp
     popq  %r12
     movq  %rax, -8(%rbp)
@@ -206,7 +207,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $5, %rax
@@ -233,7 +234,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $50, %rax
@@ -260,7 +261,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $50, %rax
@@ -287,7 +288,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $50, %rax
@@ -314,7 +315,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  -16(%rbp), %rax
@@ -331,7 +332,7 @@ main:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -344,7 +345,7 @@ switch_next_9:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -389,7 +390,7 @@ while_start_12:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $1, %rax
@@ -406,7 +407,7 @@ while_end_13:
     movq  %rsp, %r12
     andq  $-16, %rsp
     xorq  %rax, %rax
-    call  free@PLT
+    call  free
     movq  %r12, %rsp
     popq  %r12
     xorq  %rax, %rax
@@ -438,7 +439,7 @@ LIMITE: .quad 100
 clamp:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $32, %rsp
     movq  %rdi, -8(%rbp)
     movq  %rsi, -16(%rbp)
     movq  %rdx, -24(%rbp)
@@ -482,7 +483,7 @@ endif_1:
 buscarEn:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $48, %rsp
     movq  %rdi, -8(%rbp)
     movq  %rsi, -16(%rbp)
     movq  %rdx, -24(%rbp)
@@ -538,13 +539,13 @@ while_end_5:
 main:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $64, %rsp
     movq  $512, %rdi
     pushq %r12
     movq  %rsp, %r12
     andq  $-16, %rsp
     xorq  %rax, %rax
-    call  malloc@PLT
+    call  malloc
     movq  %r12, %rsp
     popq  %r12
     movq  %rax, -8(%rbp)
@@ -626,7 +627,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $5, %rax
@@ -652,7 +653,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $50, %rax
@@ -678,7 +679,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $50, %rax
@@ -704,7 +705,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $50, %rax
@@ -730,7 +731,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  -16(%rbp), %rax
@@ -747,7 +748,7 @@ main:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -760,7 +761,7 @@ switch_next_9:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -804,7 +805,7 @@ while_start_12:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $1, %rax
@@ -821,7 +822,7 @@ while_end_13:
     movq  %rsp, %r12
     andq  $-16, %rsp
     xorq  %rax, %rax
-    call  free@PLT
+    call  free
     movq  %r12, %rsp
     popq  %r12
     xorq  %rax, %rax
@@ -837,4 +838,3 @@ LC_11: .string "otro valor"
 __ASSEMBLY_OPTIMIZED_END__
 
 === STDERR ===
-Parseo exitoso

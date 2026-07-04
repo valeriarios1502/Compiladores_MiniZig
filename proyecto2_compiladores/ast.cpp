@@ -170,8 +170,12 @@ BodyStmt::~BodyStmt() { delete cuerpo; }
 void BodyStmt::accept(Visitor* visitor) { visitor->visit(this); }
 
 // ── AsignStmt ────────────────────────────────────────────────
-AsignStmt::AsignStmt(string texto, Exp* e) : variable(texto), exp(e) {}
-AsignStmt::~AsignStmt() { delete exp; }
+AsignStmt::AsignStmt(string texto, Exp* e)
+    : variable(texto), exp(e), declaredType(nullptr), hasDeclaredType(false) {}
+AsignStmt::~AsignStmt() {
+    delete exp;
+    if (hasDeclaredType) delete declaredType;
+}
 void AsignStmt::accept(Visitor* visitor) { visitor->visit(this); }
 
 // ── PrintStmt ────────────────────────────────────────────────

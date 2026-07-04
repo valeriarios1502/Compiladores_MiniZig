@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "visitor.h"
+#include "Typechecker.h"
 
 using namespace std;
 
@@ -39,7 +40,11 @@ int main(int argc, const char* argv[]) {
     try {
         ast = parser.parseProgram();
 
-        // Pase 1: constant folding
+        // Pase 1: type checking
+        TypeCheckerVisitor checker;
+        checker.typecheck(ast);
+
+        // Pase 2: constant folding
         ConstantFolding opt1;
         opt1.visit(ast);
 

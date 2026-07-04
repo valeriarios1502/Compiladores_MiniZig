@@ -342,6 +342,8 @@ class AsignStmt : public Stmt {
 public:
     string variable;
     Exp* exp;
+    Type* declaredType;
+    bool hasDeclaredType;
     void accept(Visitor* visitor) override;
     AsignStmt(string, Exp*);
     ~AsignStmt();

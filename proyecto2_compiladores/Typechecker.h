@@ -64,6 +64,7 @@ public:
     void visit(TryStmt* stm) override;
     void visit(DeferStmt* stm) override;
     void visit(ForStmt* stm) override;
+    void visit(DerefAssignStmt* stm) override;
 
     //decl
     void visit(Fundec* fd) override;
@@ -94,8 +95,13 @@ private:
     bool soncompatibles(const std::string& esperado, const std::string& dado) const {
         if (esperado == dado) return true;
 
+        if (hasGeneric(esperado) || hasGeneric(dado))
+            return true;
+
         if (dado == "null" || dado == "undefined") {
-            if (!esperado.empty() && (esperado[0] == '*' || esperado[0] == '?'))
+            if (!esperado.empty() &&
+                (esperado[0] == '*' || esperado[0] == '?' ||
+                 esperado.rfind("[]", 0) == 0))
                 return true;
         }
 
@@ -103,11 +109,19 @@ private:
             return true;
         }
 
+        if (esperado == "int" && (dado == "char" || dado == "string")) {
+            return true;
+        }
+
+        if (esperado == "int" && isPointer(dado)) {
+            return true;
+        }
+
         return false;
     }
 
     bool isNumeric(const std::string& t) const {
-        return t == "int" || t == "float";
+        return t == "int" || t == "float" || isGeneric(t);
     }
 
     bool isBool(const std::string& t) const {
@@ -120,6 +134,18 @@ private:
 
     bool isOptional(const std::string& t) const {
         return !t.empty() && t[0] == '?';
+    }
+
+    bool isGeneric(const std::string& t) const {
+        return !t.empty() && t[0] >= 'A' && t[0] <= 'Z';
+    }
+
+    bool hasGeneric(const std::string& t) const {
+        for (char c : t) {
+            if (c >= 'A' && c <= 'Z')
+                return true;
+        }
+        return false;
     }
 
     void registerFunctions(Programa* p);

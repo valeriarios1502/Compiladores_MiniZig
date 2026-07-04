@@ -316,8 +316,12 @@ Stmt* Parser::parseStmt() {
         VarDec* vd = (VarDec*)parseVar_dec();
         match(Token::SEMICOL);
         AsignStmt* a = new AsignStmt(vd->nombre, vd->exp);
+        a->declaredType = vd->tipo;
+        a->hasDeclaredType = vd->tienetipo;
         vd->exp = nullptr;
-        delete vd; 
+        vd->tipo = nullptr;
+        vd->tienetipo = false;
+        delete vd;
         return a;
     }
 
@@ -325,7 +329,11 @@ Stmt* Parser::parseStmt() {
         ConstDec* cd = (ConstDec*)parseConts_dec();
         match(Token::SEMICOL);
         AsignStmt* a = new AsignStmt(cd->nombre, cd->exp);
+        a->declaredType = cd->tipo;
+        a->hasDeclaredType = cd->tienetipo;
         cd->exp = nullptr;
+        cd->tipo = nullptr;
+        cd->tienetipo = false;
         delete cd;
         return a;
     }

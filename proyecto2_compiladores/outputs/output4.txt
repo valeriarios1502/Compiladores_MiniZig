@@ -1,4 +1,5 @@
 === STDOUT ===
+Parseo exitoso
 __ASSEMBLY_UNOPTIMIZED_BEGIN__
 .section .data
 print_int_fmt:   .string "%ld\n"
@@ -15,7 +16,7 @@ print_bool_false:.string "false\n"
 maximo:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $16, %rsp
     movq  %rdi, -8(%rbp)
     movq  %rsi, -16(%rbp)
     movq  -16(%rbp), %rax
@@ -43,7 +44,7 @@ endif_1:
 swap:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $32, %rsp
     movq  %rdi, -8(%rbp)
     movq  %rsi, -16(%rbp)
     movq  -8(%rbp), %rax
@@ -69,7 +70,7 @@ swap:
 main:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $64, %rsp
     movq  $7, %rax
     pushq %rax
     movq  $3, %rax
@@ -91,7 +92,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $2, %rax
@@ -115,7 +116,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $99, %rax
@@ -139,7 +140,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $5, %rax
@@ -166,7 +167,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  -40(%rbp), %rax
@@ -176,7 +177,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $42, %rax
@@ -203,7 +204,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  -56(%rbp), %rax
@@ -213,7 +214,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     xorq  %rax, %rax
@@ -236,7 +237,7 @@ print_bool_false:.string "false\n"
 maximo:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $16, %rsp
     movq  %rdi, -8(%rbp)
     movq  %rsi, -16(%rbp)
     movq  -16(%rbp), %rax
@@ -264,7 +265,7 @@ endif_1:
 swap:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $32, %rsp
     movq  %rdi, -8(%rbp)
     movq  %rsi, -16(%rbp)
     movq  -8(%rbp), %rax
@@ -290,7 +291,7 @@ swap:
 main:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $64, %rsp
     movq  $7, %rax
     pushq %rax
     movq  $3, %rax
@@ -311,7 +312,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $2, %rax
@@ -334,7 +335,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $99, %rax
@@ -357,7 +358,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $5, %rax
@@ -383,7 +384,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  -40(%rbp), %rax
@@ -393,7 +394,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  $42, %rax
@@ -419,7 +420,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     movq  -56(%rbp), %rax
@@ -429,7 +430,7 @@ main:
     movq  %rax, %rsi
     leaq  print_int_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     xorq  %rax, %rax
@@ -438,4 +439,3 @@ main:
 __ASSEMBLY_OPTIMIZED_END__
 
 === STDERR ===
-Parseo exitoso

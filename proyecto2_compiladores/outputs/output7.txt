@@ -1,4 +1,5 @@
 === STDOUT ===
+Parseo exitoso
 __ASSEMBLY_UNOPTIMIZED_BEGIN__
 .section .data
 print_int_fmt:   .string "%ld\n"
@@ -15,7 +16,7 @@ print_bool_false:.string "false\n"
 clasifica:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $16, %rsp
     movq  %rdi, -8(%rbp)
     movq  -8(%rbp), %rax
     pushq %rax
@@ -31,7 +32,7 @@ clasifica:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -49,7 +50,7 @@ switch_next_1:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -67,7 +68,7 @@ switch_next_3:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -80,7 +81,7 @@ switch_next_5:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -92,7 +93,7 @@ switch_end_0:
 diasemana:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $16, %rsp
     movq  %rdi, -8(%rbp)
     movq  -8(%rbp), %rax
     pushq %rax
@@ -108,7 +109,7 @@ diasemana:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -126,7 +127,7 @@ switch_next_9:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -144,7 +145,7 @@ switch_next_11:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -162,7 +163,7 @@ switch_next_13:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -180,7 +181,7 @@ switch_next_15:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -193,7 +194,7 @@ switch_next_17:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -205,7 +206,7 @@ switch_end_8:
 main:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $16, %rsp
     movq  $1, %rax
     pushq %rax
     popq  %rdi
@@ -330,7 +331,7 @@ print_bool_false:.string "false\n"
 clasifica:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $16, %rsp
     movq  %rdi, -8(%rbp)
     movq  -8(%rbp), %rax
     pushq %rax
@@ -346,7 +347,7 @@ clasifica:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -364,7 +365,7 @@ switch_next_1:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -382,7 +383,7 @@ switch_next_3:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -395,7 +396,7 @@ switch_next_5:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -407,7 +408,7 @@ switch_end_0:
 diasemana:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $16, %rsp
     movq  %rdi, -8(%rbp)
     movq  -8(%rbp), %rax
     pushq %rax
@@ -423,7 +424,7 @@ diasemana:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -441,7 +442,7 @@ switch_next_9:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -459,7 +460,7 @@ switch_next_11:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -477,7 +478,7 @@ switch_next_13:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -495,7 +496,7 @@ switch_next_15:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -508,7 +509,7 @@ switch_next_17:
     movq  %rax, %rsi
     leaq  print_str_fmt(%rip), %rdi
     xorq  %rax, %rax
-    call  printf@PLT
+    call  printf
     movq  %r12, %rsp
     popq  %r12
     addq  $8, %rsp
@@ -520,7 +521,7 @@ switch_end_8:
 main:
     pushq %rbp
     movq  %rsp, %rbp
-    subq  $1024, %rsp
+    subq  $16, %rsp
     movq  $1, %rax
     movq  %rax, %rdi
     pushq %r12
@@ -622,4 +623,3 @@ LC_19: .string "fin de semana"
 __ASSEMBLY_OPTIMIZED_END__
 
 === STDERR ===
-Parseo exitoso
