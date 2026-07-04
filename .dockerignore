@@ -1,0 +1,9 @@
+.git
+**/build
+**/outputs
+**/inputs/*_tokens.txt
+**/*.exe
+**/*.o
+**/*.s
+**/node_modules
+npm-debug.log

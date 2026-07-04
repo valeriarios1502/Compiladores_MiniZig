@@ -1,0 +1,28 @@
+FROM node:22-bookworm-slim AS builder
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY proyecto2_compiladores/ast.cpp proyecto2_compiladores/ast.h proyecto2_compiladores/environment.h proyecto2_compiladores/main.cpp proyecto2_compiladores/parser.cpp proyecto2_compiladores/parser.h proyecto2_compiladores/scanner.cpp proyecto2_compiladores/scanner.h proyecto2_compiladores/token.cpp proyecto2_compiladores/token.h proyecto2_compiladores/Typechecker.cpp proyecto2_compiladores/Typechecker.h proyecto2_compiladores/visitor.cpp proyecto2_compiladores/visitor.h ./
+
+RUN mkdir -p build \
+    && g++ -std=c++14 -O2 -o build/Proyecto2 \
+      main.cpp scanner.cpp token.cpp parser.cpp ast.cpp visitor.cpp Typechecker.cpp
+
+FROM node:22-bookworm-slim AS runtime
+
+ENV NODE_ENV=production
+ENV PORT=3001
+
+WORKDIR /app
+
+COPY proyecto2_compiladores/package.json proyecto2_compiladores/server.js ./
+COPY proyecto2_compiladores/backend ./backend
+COPY --from=builder /app/build/Proyecto2 ./build/Proyecto2
+
+EXPOSE 3001
+
+CMD ["node", "server.js"]
