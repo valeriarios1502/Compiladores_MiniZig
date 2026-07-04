@@ -316,8 +316,10 @@ Stmt* Parser::parseStmt() {
         VarDec* vd = (VarDec*)parseVar_dec();
         match(Token::SEMICOL);
         AsignStmt* a = new AsignStmt(vd->nombre, vd->exp);
+        a->tipoDeclarado = vd->tienetipo ? vd->tipo : nullptr;
         vd->exp = nullptr;
-        delete vd; 
+        vd->tipo = nullptr;  
+        delete vd;
         return a;
     }
 
