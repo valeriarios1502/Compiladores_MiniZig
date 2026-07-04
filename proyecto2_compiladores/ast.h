@@ -115,6 +115,7 @@ struct Value {
     }
 };
 
+// Operadores binarios soportados
 enum BinaryOp { 
     PLUS_OP, 
     MINUS_OP,
@@ -133,7 +134,9 @@ enum BinaryOp {
     OR
 };
 
-// ==================== Exp ====================
+// =============================================================================
+//exp
+// =============================================================================
 
 class Exp {
 public:
@@ -303,7 +306,9 @@ public:
     ~LambdaExp();
 };
 
-
+// =============================================================================
+//STm
+// =============================================================================
 class Stmt {
 public:
     virtual void accept(Visitor* visitor) = 0;
@@ -342,6 +347,7 @@ class AsignStmt : public Stmt {
 public:
     string variable;
     Exp* exp;
+    Type* tipoDeclarado = nullptr;
     void accept(Visitor* visitor) override;
     AsignStmt(string, Exp*);
     ~AsignStmt();
@@ -437,71 +443,9 @@ struct DerefAssignStmt : Stmt {
     void accept(Visitor* v) override; 
 };
 
-
-class Top_dec {
-public:
-    virtual void accept(Visitor* visitor) = 0;
-    virtual ~Top_dec() = 0;
-};
-
-class Fundec : public Top_dec {
-public:
-    string nombre;
-    Type* tipo;
-    vector<Type*> tipo_parametros;
-    vector<string> id_parametros;
-    Body* cuerpo;
-    void accept(Visitor* visitor);
-    Fundec();
-    ~Fundec();
-};
-
-class Structdec : public Top_dec {
-public:
-    string nombre;
-    vector<string> id_parametros;
-    vector<Type*> tipo_parametros;
-    void accept(Visitor* visitor);
-    Structdec();
-    ~Structdec();
-};
-
-class VarDec : public Top_dec {
-public:
-    string nombre;
-    Type* tipo;
-    Exp* exp;
-    bool tienetipo;
-    void accept(Visitor* visitor);
-    VarDec();
-    ~VarDec();
-};
-
-class ConstDec : public Top_dec {
-public:
-    string nombre;
-    Type* tipo;
-    Exp* exp;
-    bool tienetipo;
-    void accept(Visitor* visitor);
-    ConstDec();
-    ~ConstDec();
-};
-
-class Template : public Top_dec {
-public:
-    string id1;
-    string id2;
-    vector<string> id_parametros;
-    vector<Type*> tipo_parametros;
-    Type* tipo;
-    Body* block;
-    void accept(Visitor* visitor);
-    Template();
-    ~Template();
-};
-
-
+// =============================================================================
+// Tipos
+// =============================================================================
 class Type {
 public:
     virtual void accept(Visitor* visitor) = 0;
@@ -570,6 +514,75 @@ public:
     ~EnumType();
 };
 
+//=============================================================================
+// Topdec
+//=============================================================================
+class Top_dec {
+public:
+    virtual void accept(Visitor* visitor) = 0;
+    virtual ~Top_dec() = 0;
+};
+
+class Fundec : public Top_dec {
+public:
+    string nombre;
+    Type* tipo;
+    vector<Type*> tipo_parametros;
+    vector<string> id_parametros;
+    Body* cuerpo;
+    void accept(Visitor* visitor);
+    Fundec();
+    ~Fundec();
+};
+
+class Structdec : public Top_dec {
+public:
+    string nombre;
+    vector<string> id_parametros;
+    vector<Type*> tipo_parametros;
+    void accept(Visitor* visitor);
+    Structdec();
+    ~Structdec();
+};
+
+class VarDec : public Top_dec {
+public:
+    string nombre;
+    Type* tipo;
+    Exp* exp;
+    bool tienetipo;
+    void accept(Visitor* visitor);
+    VarDec();
+    ~VarDec();
+};
+
+class ConstDec : public Top_dec {
+public:
+    string nombre;
+    Type* tipo;
+    Exp* exp;
+    bool tienetipo;
+    void accept(Visitor* visitor);
+    ConstDec();
+    ~ConstDec();
+};
+
+class Template : public Top_dec {
+public:
+    string id1;
+    string id2;
+    vector<string> id_parametros;
+    vector<Type*> tipo_parametros;
+    Type* tipo;
+    Body* block;
+    void accept(Visitor* visitor);
+    Template();
+    ~Template();
+};
+
+// =============================================================================
+// Cuerpo y programa
+// =============================================================================
 
 class Body {
 public:
