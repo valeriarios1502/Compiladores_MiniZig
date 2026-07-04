@@ -51,6 +51,9 @@ void TypeCheckerVisitor::registerFunctions(Programa* p) {
         }
         if (Template* t = dynamic_cast<Template*>(d)) {
             FunInfo info;
+            string prevGeneric = currentGenericParam;
+            currentGenericParam = t->id2;
+
             t->tipo->accept(this);
             info.returnType = currentType;
             for (size_t i = 0; i < t->id_parametros.size(); ++i) {
@@ -58,6 +61,7 @@ void TypeCheckerVisitor::registerFunctions(Programa* p) {
                 info.paramTypes.push_back(currentType);
                 info.paramNames.push_back(t->id_parametros[i]);
             }
+            currentGenericParam = prevGeneric;
             funEnv[t->id1] = info;
         }
     }
@@ -172,6 +176,9 @@ void TypeCheckerVisitor::visit(Template* t) {
     string prevFunction = currentFunction;
     string prevReturn   = expectedReturnType;
     bool   prevHasRet   = hasReturn;
+    string prevGeneric  = currentGenericParam;   // <-- AGREGAR
+
+    currentGenericParam = t->id2;                // <-- AGREGAR
 
     t->tipo->accept(this);
     expectedReturnType = currentType;
@@ -194,6 +201,7 @@ void TypeCheckerVisitor::visit(Template* t) {
     currentFunction    = prevFunction;
     expectedReturnType = prevReturn;
     hasReturn          = prevHasRet;
+    currentGenericParam = prevGeneric;           // <-- AGREGAR
 }
 
 void TypeCheckerVisitor::visit(IfStmt* stm) {
@@ -251,15 +259,23 @@ void TypeCheckerVisitor::visit(AsignStmt* stm) {
         if (stm->exp) inferType(stm->exp);
         return;
     }
-
     string exprType = inferType(stm->exp);
+
+    if (stm->tipoDeclarado) {
+        stm->tipoDeclarado->accept(this);
+        string declaredType = currentType;
+        if (!soncompatibles(declaredType, exprType))
+            throw runtime_error("TypeChecker: tipo incompatible en '" + stm->variable +
+                                "': se esperaba '" + declaredType + "' pero se obtuvo '" + exprType + "'");
+        env.add_var(stm->variable, declaredType);
+        return;
+    }
 
     if (env.check(stm->variable)) {
         string existing = env.lookup(stm->variable);
         if (!soncompatibles(existing, exprType))
             throw runtime_error("TypeChecker: asignación inválida a '" + stm->variable +
-                                "': se esperaba '" + existing +
-                                "' pero se obtuvo '" + exprType + "'");
+                                "': se esperaba '" + existing + "' pero se obtuvo '" + exprType + "'");
     } else {
         env.add_var(stm->variable, exprType);
     }
@@ -406,7 +422,7 @@ Value TypeCheckerVisitor::visit(BinaryExp* exp) {
         case DIV_OP:
             if (!isNumeric(leftType) || !isNumeric(rightType))
                 throw runtime_error("'/' requiere numéricos");
-            currentType = "float";  
+            currentType = (leftType == "float" || rightType == "float") ? "float" : "int";
             break;
 
         case MENORI:   
@@ -554,19 +570,13 @@ Value TypeCheckerVisitor::visit(AlgoconcorchetesExp* exp) {
         throw runtime_error("TypeChecker: índice de array debe ser int, se obtuvo '" +
                             indexType + "'");
 
-    if (!baseType.empty() && baseType.back() == ']') {
-        auto pos = baseType.rfind(']');
-        if (pos != string::npos)
-            currentType = baseType.substr(pos + 1);
-        else
-            currentType = baseType;
+    if (baseType.rfind("[]", 0) == 0) {          // <-- chequea prefijo, no sufijo
+        currentType = baseType.substr(2);
     } else if (isPointer(baseType)) {
         currentType = baseType.substr(1);
     } else {
-        if (baseType == "string")
-            currentType = "char";
-        else
-            currentType = baseType;
+        if (baseType == "string") currentType = "char";
+        else currentType = baseType;
     }
     return Value();
 }
@@ -585,30 +595,24 @@ Value TypeCheckerVisitor::visit(PuntoExp* exp) {
     if (exp->id == "__unwrap__") {
         if (!isOptional(baseType))
             throw runtime_error("TypeChecker: .? sobre tipo no opcional '" + baseType + "'");
-        currentType = baseType.substr(1); 
+        currentType = baseType.substr(1);
         return Value();
     }
 
-    auto it = structEnv.find(baseType);
+    string innerType = baseType;
+    if (isPointer(innerType)) innerType = innerType.substr(1);   // <-- AGREGADO
+    if (isOptional(innerType)) innerType = innerType.substr(1);
+
+    auto it = structEnv.find(innerType);
     if (it == structEnv.end()) {
-        string innerType = isOptional(baseType) ? baseType.substr(1) : baseType;
-        it = structEnv.find(innerType);
-        if (it == structEnv.end()) {
-            if (baseType == "string" && exp->id == "len") {
-                currentType = "int";
-                return Value();
-            }
-            currentType = "unknown";
-            return Value();
-        }
+        if (baseType == "string" && exp->id == "len") { currentType = "int"; return Value(); }
+        currentType = "unknown";
+        return Value();
     }
 
-    const auto& fields = it->second;
-    auto fit = fields.find(exp->id);
-    if (fit == fields.end())
-        throw runtime_error("TypeChecker: campo '" + exp->id +
-                            "' no existe en struct '" + baseType + "'");
-
+    auto fit = it->second.find(exp->id);
+    if (fit == it->second.end())
+        throw runtime_error("TypeChecker: campo '" + exp->id + "' no existe en struct '" + baseType + "'");
     currentType = fit->second;
     return Value();
 }
@@ -643,8 +647,44 @@ Value TypeCheckerVisitor::visit(LambdaExp* exp) {
     return Value();
 }
 
+void TypeCheckerVisitor::visit(DerefAssignStmt* stm) {
+    string rvalType = inferType(stm->rval);
+
+    if (dynamic_cast<AlgoconcorchetesExp*>(stm->lval)) {
+        string elemType = inferType(stm->lval);
+        if (!soncompatibles(elemType, rvalType))
+            throw runtime_error("TypeChecker: asignación de índice incompatible: se esperaba '" +
+                                elemType + "' pero se obtuvo '" + rvalType + "'");
+        return;
+    }
+
+    if (dynamic_cast<PuntoExp*>(stm->lval)) {
+        string campoType = inferType(stm->lval);
+        if (!soncompatibles(campoType, rvalType))
+            throw runtime_error("TypeChecker: asignación de campo incompatible: se esperaba '" +
+                                campoType + "' pero se obtuvo '" + rvalType + "'");
+        return;
+    }
+
+    // caso real: *p = x
+    string lvalType = inferType(stm->lval);
+    if (!isPointer(lvalType))
+        throw runtime_error("TypeChecker: asignación por desreferencia requiere puntero, se obtuvo '" +
+                            lvalType + "'");
+    string tipoApuntado = lvalType.substr(1);
+    if (!soncompatibles(tipoApuntado, rvalType))
+        throw runtime_error("TypeChecker: asignación por desreferencia incompatible: se esperaba '" +
+                            tipoApuntado + "' pero se obtuvo '" + rvalType + "'");
+}
+
 void TypeCheckerVisitor::visit(IdType* tipo) {
     const string& id = tipo->id;
+
+    if (!currentGenericParam.empty() && id == currentGenericParam) {
+        currentType = "any";
+        return;
+    }
+
     if (id == "i32" || id == "i64" || id == "u32" || id == "u64" ||
         id == "i8"  || id == "u8"  || id == "isize" || id == "usize" ||
         id == "comptime_int")
