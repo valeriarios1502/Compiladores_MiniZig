@@ -49,6 +49,7 @@ public:
     Value visit(AlgoconcorchetesExp* exp) override;
     Value visit(PuntoExp* exp) override;
     Value visit(LambdaExp* exp) override;
+    void visit(DerefAssignStmt* stm) override;
 
     //stm
     void visit(IfStmt* stm) override;
@@ -90,37 +91,35 @@ private:
         exp->accept(this);
         return currentType;
     }
-    
+
+    std::string currentGenericParam;   
+
     bool soncompatibles(const std::string& esperado, const std::string& dado) const {
         if (esperado == dado) return true;
+        if (esperado == "any" || dado == "any") return true;
+
+        // pelar punteros/optionals en capas: "*any" vs "*int" -> comparar "any" vs "int"
+        if (!esperado.empty() && !dado.empty() && esperado[0]=='*' && dado[0]=='*')
+            return soncompatibles(esperado.substr(1), dado.substr(1));
+        if (!esperado.empty() && !dado.empty() && esperado[0]=='?' && dado[0]=='?')
+            return soncompatibles(esperado.substr(1), dado.substr(1));
 
         if (dado == "null" || dado == "undefined") {
-            if (!esperado.empty() && (esperado[0] == '*' || esperado[0] == '?'))
+            if (!esperado.empty() && (esperado[0]=='*' || esperado[0]=='?' || esperado[0]=='['))
                 return true;
         }
 
-        if (esperado == "float" && dado == "int"){
-            return true;
-        }
+        if (esperado == "float" && dado == "int") return true;
+        if (isPointer(esperado) && dado == "int") return true;   
+        if (isPointer(dado) && esperado == "int") return true; 
 
         return false;
     }
 
-    bool isNumeric(const std::string& t) const {
-        return t == "int" || t == "float";
-    }
-
-    bool isBool(const std::string& t) const {
-        return t == "bool";
-    }
-
-    bool isPointer(const std::string& t) const {
-        return !t.empty() && t[0] == '*';
-    }
-
-    bool isOptional(const std::string& t) const {
-        return !t.empty() && t[0] == '?';
-    }
+    bool isNumeric(const std::string& t) const { return t=="int"||t=="float"||t=="any"; }
+    bool isBool(const std::string& t) const { return t=="bool"||t=="any"; }
+    bool isPointer(const std::string& t) const { return (!t.empty()&&t[0]=='*')||t=="any"; }
+    bool isOptional(const std::string& t) const { return (!t.empty()&&t[0]=='?')||t=="any"; }
 
     void registerFunctions(Programa* p);
 
