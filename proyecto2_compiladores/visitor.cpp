@@ -52,6 +52,34 @@ int GenCodeVisitor::alignStackBytes(int bytes) const {
     return rem == 0 ? bytes : bytes + (16 - rem);
 }
 
+int GenCodeVisitor::elementSizeBytes(Type* tipo) const {
+    return 8;
+}
+
+void GenCodeVisitor::emitArrayElementCount(ArrayType* tipo) {
+    if (tipo->exp1) {
+        tipo->exp1->accept(this);
+    } else {
+        out << "    movq $1, %rax\n";
+    }
+
+    if (tipo->existe_exp2 && tipo->exp2) {
+        out << "    pushq %rax\n";
+        tipo->exp2->accept(this);
+        out << "    movq %rax, %rcx\n";
+        out << "    popq %rax\n";
+        out << "    imulq %rcx, %rax\n";
+    }
+
+    if (auto innerArray = dynamic_cast<ArrayType*>(tipo->tipo)) {
+        out << "    pushq %rax\n";
+        emitArrayElementCount(innerArray);
+        out << "    movq %rax, %rcx\n";
+        out << "    popq %rax\n";
+        out << "    imulq %rcx, %rax\n";
+    }
+}
+
 size_t GenCodeVisitor::maxRegisterArgs() const {
 #ifdef _WIN32
     return 4;
@@ -210,6 +238,68 @@ namespace {
     }
 }
 
+namespace {
+    bool getIndexedIdAndConst(Exp* exp, std::string& nombre, int& index) {
+        auto idx = dynamic_cast<AlgoconcorchetesExp*>(exp);
+        if (!idx) return false;
+
+        auto id = dynamic_cast<IdExp*>(idx->nombre);
+        if (!id) return false;
+
+        int value = 0;
+        if (!getConstInt(idx->dentroexp, value)) return false;
+
+        nombre = id->value;
+        index = value;
+        return true;
+    }
+
+    void noteDynamicArrayIndex(std::unordered_map<std::string,int>& sizes,
+                               const std::string& nombre,
+                               int index) {
+        if (index < 0) return;
+        int needed = index + 1;
+        auto it = sizes.find(nombre);
+        if (it == sizes.end() || needed > it->second) sizes[nombre] = needed;
+    }
+
+    void recolectarDynamicArrays(Stmt* s, std::unordered_map<std::string,int>& sizes);
+
+    void recolectarDynamicArraysBody(Body* b, std::unordered_map<std::string,int>& sizes) {
+        if (!b) return;
+        for (auto s : b->slist) recolectarDynamicArrays(s, sizes);
+    }
+
+    void recolectarDynamicArrays(Stmt* s, std::unordered_map<std::string,int>& sizes) {
+        if (!s) return;
+
+        if (auto d = dynamic_cast<DerefAssignStmt*>(s)) {
+            std::string nombre;
+            int index = 0;
+            if (getIndexedIdAndConst(d->lval, nombre, index)) noteDynamicArrayIndex(sizes, nombre, index);
+        } else if (auto i = dynamic_cast<IfStmt*>(s)) {
+            recolectarDynamicArraysBody(i->cuerpodelif, sizes);
+            if (i->hayelse) recolectarDynamicArraysBody(i->cuerpodelelse, sizes);
+        } else if (auto w = dynamic_cast<WhileStmt*>(s)) {
+            for (auto st : w->cuerpodelwhile) recolectarDynamicArrays(st, sizes);
+        } else if (auto f = dynamic_cast<ForStmt*>(s)) {
+            if (f->asignacion) recolectarDynamicArrays(f->asignacion, sizes);
+            if (f->incremento) recolectarDynamicArrays(f->incremento, sizes);
+            recolectarDynamicArraysBody(f->cuerpo, sizes);
+        } else if (auto bs = dynamic_cast<BodyStmt*>(s)) {
+            recolectarDynamicArraysBody(bs->cuerpo, sizes);
+        } else if (auto sw = dynamic_cast<SwitchStmt*>(s)) {
+            for (auto& pr : sw->casos) recolectarDynamicArraysBody(pr.second, sizes);
+            if (sw->default_caso) recolectarDynamicArraysBody(sw->default_caso, sizes);
+        } else if (auto t = dynamic_cast<TryStmt*>(s)) {
+            recolectarDynamicArraysBody(t->try_body, sizes);
+            recolectarDynamicArraysBody(t->catch_body, sizes);
+        } else if (auto d = dynamic_cast<DeferStmt*>(s)) {
+            recolectarDynamicArrays(d->stmt, sizes);
+        }
+    }
+}
+
 //genecode
 
 void GenCodeVisitor::gencode(Programa* program){
@@ -230,6 +320,12 @@ void GenCodeVisitor::gencode(Programa* program){
             int extra = 0;
             for (auto& kv : arrsLocal) extra += (kv.second - 1);
             funcontador[f->nombre] = (int)vars.size() + extra;
+
+            std::unordered_map<std::string,int> dynamicArrsLocal;
+            recolectarDynamicArraysBody(f->cuerpo, dynamicArrsLocal);
+            for (auto& kv : dynamicArrsLocal) {
+                dynamicArraySizes[f->nombre + "::" + kv.first] = kv.second;
+            }
         }
         else if (Template* t = dynamic_cast<Template*>(dec)) {  
             std::string nombreCompleto = t->id1;
@@ -237,6 +333,12 @@ void GenCodeVisitor::gencode(Programa* program){
             for (auto& p : t->id_parametros) vars.insert(p);
             recolectarVarsBody(t->block, vars);
             funcontador[nombreCompleto] = (int)vars.size();
+
+            std::unordered_map<std::string,int> dynamicArrsLocal;
+            recolectarDynamicArraysBody(t->block, dynamicArrsLocal);
+            for (auto& kv : dynamicArrsLocal) {
+                dynamicArraySizes[nombreCompleto + "::" + kv.first] = kv.second;
+            }
 
             funParamNames[nombreCompleto] = t->id_parametros;
             std::vector<std::string> tiposParam;
@@ -311,12 +413,10 @@ void GenCodeVisitor::visit(ConstDec *c) {
     out << ".global " << c->nombre << "\n";
     out << c->nombre << ":\n";
 
-    if (c->exp != nullptr) {
-        //se usa constant folding para evaluar la expresión y obtener su valor inmediato
-        // out << "    .quad " << c->exp->get_valor_inmediato() << "\n";
-    } else {
-        out << "    .quad 0\n";
-    }
+    int valor = 0;
+    if (c->exp != nullptr) getConstInt(c->exp, valor);
+    out << "    .quad " << valor << "\n";
+    out << ".text\n";
 }
 
 void GenCodeVisitor::visit(VarDec *v) {
@@ -336,12 +436,10 @@ void GenCodeVisitor::visit(VarDec *v) {
         out << ".global g_" << v->nombre << "\n";
         out << "g_" << v->nombre << ":\n";
 
-        if (v->exp != nullptr) {
-            //se usa constant folding para evaluar la expresión y obtener su valor inmediato
-            // out << "    .quad " << c->exp->get_valor_inmediato() << "\n";
-        } else {
-            out << "    .quad 0\n"; 
-        }
+        int valor = 0;
+        if (v->exp != nullptr) getConstInt(v->exp, valor);
+        out << "    .quad " << valor << "\n";
+        out << ".text\n";
     } 
     else {
         
@@ -562,6 +660,14 @@ Value GenCodeVisitor::visit(UnaryExp *exp) {
 
 Value GenCodeVisitor::visit(NewExp *e) {
     this->lastTypeName = "";
+
+    if (auto arrayType = dynamic_cast<ArrayType*>(e->tipo)) {
+        emitArrayElementCount(arrayType);
+        out << "    imulq $" << elementSizeBytes(arrayType->tipo) << ", %rax\n";
+        out << "    movq %rax, " << argRegister(0) << "\n";
+        emitCall("malloc");
+        return Value::makeInt(0);
+    }
 
     if (e->tipo != nullptr) {
         e->tipo->accept(this);
@@ -803,7 +909,19 @@ void GenCodeVisitor::visit(AsignStmt* stm) {
         variableTypes[stm->variable] = "*" + lastTypeName;
     }
 
-    stm->exp->accept(this);
+    bool expEmitida = false;
+    if (auto newExp = dynamic_cast<NewExp*>(stm->exp)) {
+        if (!dynamic_cast<ArrayType*>(newExp->tipo)) {
+            auto sizeIt = dynamicArraySizes.find(funcionActual + "::" + stm->variable);
+            if (sizeIt != dynamicArraySizes.end()) {
+                out << "    movq $" << (sizeIt->second * 8) << ", " << argRegister(0) << "\n";
+                emitCall("malloc");
+                expEmitida = true;
+            }
+        }
+    }
+
+    if (!expEmitida) stm->exp->accept(this);
     if (globales.count(stm->variable) && !posicion.count(stm->variable)) {
         out << "movq %rax, g_" << stm->variable << "(%rip)" << endl;
     } else {

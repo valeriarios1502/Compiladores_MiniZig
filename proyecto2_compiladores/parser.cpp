@@ -799,6 +799,11 @@ Exp* Parser::parsePrimaryExp() {
     // new <type>
     if (match(Token::NEW)) {
         Type* tipo = parseType();
+        while (match(Token::LCORCHETE)) {
+            Exp* size = parseLogicExp();
+            expect(Token::RCORCHETE, "Se esperaba ']' en new array");
+            tipo = new ArrayType(size, nullptr, tipo, false);
+        }
         return new NewExp(tipo);
     }
 

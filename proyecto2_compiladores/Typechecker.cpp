@@ -570,7 +570,9 @@ Value TypeCheckerVisitor::visit(AlgoconcorchetesExp* exp) {
         throw runtime_error("TypeChecker: índice de array debe ser int, se obtuvo '" +
                             indexType + "'");
 
-    if (baseType.rfind("[]", 0) == 0) {          // <-- chequea prefijo, no sufijo
+    if (baseType.rfind("*[]", 0) == 0) {
+        currentType = baseType.substr(3);
+    } else if (baseType.rfind("[]", 0) == 0) {
         currentType = baseType.substr(2);
     } else if (isPointer(baseType)) {
         currentType = baseType.substr(1);

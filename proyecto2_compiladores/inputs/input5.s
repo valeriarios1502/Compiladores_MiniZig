@@ -48,7 +48,7 @@ movl $0, %eax
     call printf
     movq -64(%rbp), %rsp
 endif_0:
-    movq $8, %rcx
+    movq $40, %rcx
     movq %rsp, -64(%rbp)
     andq $-16, %rsp
     subq $32, %rsp

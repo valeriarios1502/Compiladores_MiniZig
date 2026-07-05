@@ -1,4 +1,4 @@
 === STDOUT ===
 
 === STDERR ===
-Error al generar código: TypeChecker: tipo incompatible en var 's': se esperaba 'int' pero se obtuvo 'string'
+Error al generar código: TypeChecker: tipo incompatible en var 'ch': se esperaba 'int' pero se obtuvo 'char'

@@ -6,6 +6,8 @@ print_str_fmt: .string "%s\n"
 .data
 .global LIMITE
 LIMITE:
+    .quad 100
+.text
 
 .global clamp
 clamp:
@@ -125,7 +127,7 @@ main:
     pushq %rbp
     movq %rsp, %rbp
     subq $80, %rsp
-    movq $8, %rcx
+    movq $40, %rcx
     movq %rsp, -80(%rbp)
     andq $-16, %rsp
     subq $32, %rsp

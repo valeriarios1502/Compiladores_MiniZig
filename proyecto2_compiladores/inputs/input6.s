@@ -194,7 +194,7 @@ movl $0, %eax
     subq $32, %rsp
     call printf
     movq -96(%rbp), %rsp
-    movq $8, %rcx
+    movq $24, %rcx
     movq %rsp, -96(%rbp)
     andq $-16, %rsp
     subq $32, %rsp

@@ -164,9 +164,12 @@ public:
     bool dentroDeFuncion = false;
 
     std::unordered_map<std::string, int> arrayLocals; 
+    std::unordered_map<std::string, int> dynamicArraySizes;
     
     void genAddress(Exp* lval);
     int alignStackBytes(int bytes) const;
+    int elementSizeBytes(Type* tipo) const;
+    void emitArrayElementCount(ArrayType* tipo);
     size_t maxRegisterArgs() const;
     const char* argRegister(size_t index) const;
     void emitCall(const std::string& nombre);
