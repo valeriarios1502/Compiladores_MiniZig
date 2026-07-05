@@ -1,6 +1,16 @@
 import os
 import subprocess
 import shutil
+import tempfile
+
+def run_capture(cmd):
+    return subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
 
 # Archivos c++
 programa = ["main.cpp", "scanner.cpp", "token.cpp", "parser.cpp", "ast.cpp", "visitor.cpp", "Typechecker.cpp"]
@@ -9,7 +19,7 @@ ejecutable = "Proyecto2.exe"
 # Compilar
 compile = ["g++", "-std=c++14", "-o", ejecutable] + programa
 print("Compilando:", " ".join(compile))
-result = subprocess.run(compile, capture_output=True, text=True)
+result = run_capture(compile)
 
 if result.returncode != 0:
     print("Error en compilación:\n", result.stderr)
@@ -29,15 +39,40 @@ for i in range(1, 11):
     if os.path.isfile(filepath):
         print(f"Ejecutando {filename}")
         run_cmd = [os.path.join(".", ejecutable), filepath]
-        result = subprocess.run(run_cmd, capture_output=True, text=True)
+        result = run_capture(run_cmd)
+        asm_file = os.path.splitext(filepath)[0] + ".s"
+        asm_build = None
+        asm_run = None
 
-        # Guardar stdout y stderr
+        if result.returncode == 0 and os.path.isfile(asm_file):
+            with tempfile.TemporaryDirectory(prefix=f"minizig_input{i}_") as temp_dir:
+                asm_exe = os.path.join(temp_dir, f"input{i}_program.exe")
+                asm_build = run_capture(["g++", asm_file, "-o", asm_exe])
+                if asm_build.returncode == 0:
+                    asm_run = run_capture([asm_exe])
+
+        stdout_text = ""
+        stderr_text = ""
+
+        if result.returncode != 0:
+            stderr_text = result.stderr
+        elif not os.path.isfile(asm_file):
+            stderr_text = "No se genero assembly correctamente.\n"
+        elif asm_build and asm_build.returncode != 0:
+            stderr_text = asm_build.stderr
+        elif asm_run:
+            stdout_text = asm_run.stdout
+            stderr_text = asm_run.stderr
+        else:
+            stderr_text = "No se pudo ejecutar el assembly generado.\n"
+
+        # Guardar salida final del programa generado
         output_file = os.path.join(output_dir, f"output{i}.txt")
         with open(output_file, "w", encoding="utf-8") as f:
             f.write("=== STDOUT ===\n")
-            f.write(result.stdout)
+            f.write(stdout_text)
             f.write("\n=== STDERR ===\n")
-            f.write(result.stderr)
+            f.write(stderr_text)
 
         # Archivos generados
         tokens_file = os.path.join(input_dir, f"input{i}_tokens.txt")  # se crea en inputs/
@@ -56,7 +91,7 @@ for i in range(1, 11):
             # Convertir a PNG
             output_img = os.path.join(output_dir, f"ast_{i}.png")
             dot_cmd = ["dot", "-Tpng", dest_ast, "-o", output_img]
-            subprocess.run(dot_cmd, capture_output=True, text=True)
+            run_capture(dot_cmd)
 
     else:
         print(filename, "no encontrado en", input_dir)

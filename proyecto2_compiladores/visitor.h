@@ -157,6 +157,7 @@ public:
 
     void emitirDefers(); 
     string funcionActual = "";
+    int callScratchOffset = 0;
 
     vector<Stmt*> deferStack;
     
@@ -165,6 +166,11 @@ public:
     std::unordered_map<std::string, int> arrayLocals; 
     
     void genAddress(Exp* lval);
+    int alignStackBytes(int bytes) const;
+    size_t maxRegisterArgs() const;
+    const char* argRegister(size_t index) const;
+    void emitCall(const std::string& nombre);
+    void emitStringData(const std::string& label, const std::string& value);
     
     void gencode(Programa* program);
 

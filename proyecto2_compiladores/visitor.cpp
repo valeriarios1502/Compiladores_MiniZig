@@ -2,10 +2,28 @@
 #include "ast.h"
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include "Typechecker.h"
+
+namespace {
+    std::string escapeAsmString(const std::string& value) {
+        std::ostringstream escaped;
+        for (char ch : value) {
+            switch (ch) {
+                case '\\': escaped << "\\\\"; break;
+                case '"':  escaped << "\\\""; break;
+                case '\n': escaped << "\\n"; break;
+                case '\r': escaped << "\\r"; break;
+                case '\t': escaped << "\\t"; break;
+                default:   escaped << ch; break;
+            }
+        }
+        return escaped.str();
+    }
+}
 
 int GenCodeVisitor::getLocalSlot(const string& nombre) {
     auto it = posicion.find(nombre);
@@ -19,6 +37,55 @@ void GenCodeVisitor::emitirDefers() {
         (*it)->accept(this);
     }
     deferStack.clear();
+}
+
+int GenCodeVisitor::alignStackBytes(int bytes) const {
+    if (bytes == 0) bytes = 16;
+    int rem = bytes % 16;
+    return rem == 0 ? bytes : bytes + (16 - rem);
+}
+
+size_t GenCodeVisitor::maxRegisterArgs() const {
+#ifdef _WIN32
+    return 4;
+#else
+    return 6;
+#endif
+}
+
+const char* GenCodeVisitor::argRegister(size_t index) const {
+#ifdef _WIN32
+    static const char* argRegs[] = {"%rcx", "%rdx", "%r8", "%r9"};
+#else
+    static const char* argRegs[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+#endif
+    return index < maxRegisterArgs() ? argRegs[index] : nullptr;
+}
+
+void GenCodeVisitor::emitCall(const std::string& nombre) {
+#ifdef _WIN32
+    if (callScratchOffset > 0) {
+        out << "    movq %rsp, " << (-callScratchOffset) << "(%rbp)\n";
+    } else {
+        out << "    movq %rsp, %r11\n";
+    }
+    out << "    andq $-16, %rsp\n";
+    out << "    subq $32, %rsp\n";
+    out << "    call " << nombre << "\n";
+    if (callScratchOffset > 0) {
+        out << "    movq " << (-callScratchOffset) << "(%rbp), %rsp\n";
+    } else {
+        out << "    movq %r11, %rsp\n";
+    }
+#else
+    out << "    call " << nombre << "\n";
+#endif
+}
+
+void GenCodeVisitor::emitStringData(const std::string& label, const std::string& value) {
+    out << ".data\n";
+    out << label << ": .string \"" << escapeAsmString(value) << "\"\n";
+    out << ".text\n";
 }
 
 GenCodeVisitor::GenCodeVisitor(std::ostream &out) : out(out) {
@@ -175,13 +242,16 @@ void GenCodeVisitor::gencode(Programa* program){
 void GenCodeVisitor::visit(Programa *program) {
     
     out << ".data\n";
-    out << "print_fmt: .string \"%ld \\n\"\n";
+    out << "print_int_fmt: .string \"%ld\\n\"\n";
+    out << "print_str_fmt: .string \"%s\\n\"\n";
     out << "\n.text\n";
 
     for (auto dec : program->declist)
         dec->accept(this);
 
+#ifndef _WIN32
     out << "\n.section .note.GNU-stack,\"\",@progbits\n";
+#endif
 }
 
 void GenCodeVisitor::visit(Body* b) {
@@ -205,15 +275,14 @@ void GenCodeVisitor::visit(Template *t) {
     out << "    pushq %rbp\n";
     out << "    movq %rsp, %rbp\n";
 
-    int bytes = funcontador[nombreCompleto] * 8;
-    if (bytes == 0) bytes = 16;
+    int bytes = alignStackBytes(funcontador[nombreCompleto] * 8 + 8);
+    callScratchOffset = bytes;
 
     out << "    subq $" << bytes << ", %rsp\n";
 
-    static const char* argRegs[] = {"%rdi","%rsi","%rdx","%rcx","%r8","%r9"};
-    for (size_t i = 0; i < t->id_parametros.size() && i < 6; i++) {
+    for (size_t i = 0; i < t->id_parametros.size() && i < maxRegisterArgs(); i++) {
         int slot = getLocalSlot(t->id_parametros[i]);
-        out << "    movq " << argRegs[i] << ", " << (-8 * slot) << "(%rbp)\n";
+        out << "    movq " << argRegister(i) << ", " << (-8 * slot) << "(%rbp)\n";
     }
 
     if (t->block) t->block->accept(this);
@@ -290,15 +359,14 @@ void GenCodeVisitor::visit(Fundec* dec) {
     out << "    pushq %rbp\n";
     out << "    movq %rsp, %rbp\n";
 
-    int bytes = funcontador[dec->nombre] * 8;
-    if (bytes == 0) bytes = 16; 
+    int bytes = alignStackBytes(funcontador[dec->nombre] * 8 + 8);
+    callScratchOffset = bytes;
 
     out << "    subq $" << bytes << ", %rsp\n";
 
-    static const char* argRegs[] = {"%rdi","%rsi","%rdx","%rcx","%r8","%r9"};
-    for (size_t i = 0; i < dec->id_parametros.size() && i < 6; i++) {
+    for (size_t i = 0; i < dec->id_parametros.size() && i < maxRegisterArgs(); i++) {
         int slot = getLocalSlot(dec->id_parametros[i]);
-        out << "    movq " << argRegs[i] << ", " << (-8 * slot) << "(%rbp)\n";
+        out << "    movq " << argRegister(i) << ", " << (-8 * slot) << "(%rbp)\n";
     }
 
     if (dec->cuerpo) dec->cuerpo->accept(this);
@@ -398,7 +466,8 @@ Value GenCodeVisitor::visit(NumberExpFlotante *exp) {
 }
 
 Value GenCodeVisitor::visit(StringExp *exp) {
-    std::string strLabel = "._str_" + std::to_string(labelcont++);
+    std::string strLabel = "str_" + std::to_string(labelcont++);
+    emitStringData(strLabel, exp->valor);
     out << "    leaq " << strLabel << "(%rip), %rax\n";
     return Value::makeInt(0);
 }
@@ -476,8 +545,8 @@ Value GenCodeVisitor::visit(NewExp *e) {
         int numeroCampos = structFields[this->lastTypeName];
         tamanoBytes = numeroCampos * 8;
     }
-    out << "    movq $" << tamanoBytes << ", %rdi\n";
-    out << "    call malloc\n";
+    out << "    movq $" << tamanoBytes << ", " << argRegister(0) << "\n";
+    emitCall("malloc");
     return Value::makeInt(0);
 }
 
@@ -516,8 +585,8 @@ Value GenCodeVisitor::visit(PunteroExp* exp) {
 Value GenCodeVisitor::visit(AlgoconcorchetesylistaExp* exp) {
     int n = (int)exp->argumentos.size();
 
-    out << "movq $" << (n * 8) << ", %rdi" << endl;
-    out << "call malloc@PLT" << endl;
+    out << "movq $" << (n * 8) << ", " << argRegister(0) << endl;
+    emitCall("malloc");
     out << "pushq %rax" << endl; 
 
     for (int i = 0; i < n; i++) {
@@ -558,15 +627,21 @@ Value GenCodeVisitor::visit(AlgoconcorchetesExp* exp) {
 }
 
 Value GenCodeVisitor::visit(FcallExp *e) {
-    static const char* argRegs[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+    size_t n = std::min(e->argumentos.size(), maxRegisterArgs());
 
-    for (size_t i = 0; i < e->argumentos.size() && i < 6; i++) {
-        if (e->argumentos[i] != nullptr) {
-            e->argumentos[i]->accept(this);
-            out << "    movq %rax, " << argRegs[i] << "\n"; 
+    for (size_t i = n; i > 0; i--) {
+        if (e->argumentos[i - 1] != nullptr) {
+            e->argumentos[i - 1]->accept(this);
+            out << "    pushq %rax\n";
+        } else {
+            out << "    pushq $0\n";
         }
     }
-    out << "    call " << e->nombre << "\n";
+
+    for (size_t i = 0; i < n; i++) {
+        out << "    popq " << argRegister(i) << "\n";
+    }
+    emitCall(e->nombre);
     return Value::makeInt(0);
 }
 
@@ -584,6 +659,7 @@ Value GenCodeVisitor::visit(LambdaExp *e) {
     out << "    movq %rsp, %rbp\n";
 
     std::string funcionPadre = funcionActual;
+    int scratchPadre = callScratchOffset;
     funcionActual = nombreLambda; 
     
     posicion.clear();
@@ -593,17 +669,15 @@ Value GenCodeVisitor::visit(LambdaExp *e) {
     int totalVariables = e->id_parametros.size(); 
     funcontador[nombreLambda] = totalVariables + 4; 
 
-    int bytes = funcontador[nombreLambda] * 8;
-    if (bytes == 0) bytes = 16;
-    if (bytes % 16 != 0) bytes += 8;
+    int bytes = alignStackBytes(funcontador[nombreLambda] * 8 + 8);
+    callScratchOffset = bytes;
 
     out << "    subq $" << bytes << ", %rsp\n";
 
-    static const char* argRegs[] = {"%rdi","%rsi","%rdx","%rcx","%r8","%r9"};
     if (e->hayparametros) {
-        for (size_t i = 0; i < e->id_parametros.size() && i < 6; i++) {
+        for (size_t i = 0; i < e->id_parametros.size() && i < maxRegisterArgs(); i++) {
             int slot = getLocalSlot(e->id_parametros[i]);
-            out << "    movq " << argRegs[i] << ", " << (-8 * slot) << "(%rbp)\n";
+            out << "    movq " << argRegister(i) << ", " << (-8 * slot) << "(%rbp)\n";
         }
     }
 
@@ -617,6 +691,7 @@ Value GenCodeVisitor::visit(LambdaExp *e) {
     out << labelLambdaSkip << ":\n";
 
     funcionActual = funcionPadre;
+    callScratchOffset = scratchPadre;
 
     out << "    leaq " << nombreLambda << "(%rip), %rax\n";
     return Value::makeInt(0);
@@ -697,9 +772,15 @@ void GenCodeVisitor::visit(AsignStmt* stm) {
 
 void GenCodeVisitor::visit(PrintStmt* stm) {
     stm->exp->accept(this);
-    out << "movq %rax, %rsi" << endl;
-    out << "leaq print_fmt(%rip), %rdi" << endl;
-    out << "call printf@PLT" << endl;
+    if (dynamic_cast<StringExp*>(stm->exp)) {
+        out << "movq %rax, " << argRegister(1) << endl;
+        out << "leaq print_str_fmt(%rip), " << argRegister(0) << endl;
+    } else {
+        out << "movq %rax, " << argRegister(1) << endl;
+        out << "leaq print_int_fmt(%rip), " << argRegister(0) << endl;
+    }
+    out << "movl $0, %eax" << endl;
+    emitCall("printf");
 }
 
 void GenCodeVisitor::visit(ReturnStm* stm) {
@@ -707,13 +788,14 @@ void GenCodeVisitor::visit(ReturnStm* stm) {
     else out << "movq $0, %rax" << endl;
 
     emitirDefers();
-    out << "jmp end_" << funcionActual << endl;
+    out << "leave" << endl;
+    out << "ret" << endl;
 }
 
 void GenCodeVisitor::visit(DeleteStm* stm) {
     stm->exp->accept(this);
-    out << "movq %rax, %rdi" << endl;
-    out << "call free@PLT" << endl;
+    out << "movq %rax, " << argRegister(0) << endl;
+    emitCall("free");
 }
 
 void GenCodeVisitor::visit(ContinueStm* stm) {
