@@ -298,7 +298,7 @@ movl $0, %eax
     subq $32, %rsp
     call printf
     movq -112(%rbp), %rsp
-    movq $8, %rcx
+    movq $16, %rcx
     movq %rsp, -112(%rbp)
     andq $-16, %rsp
     subq $32, %rsp
@@ -315,7 +315,7 @@ movq %rax, -40(%rbp)
   movq $4, %rax
   pushq %rax
     movq -40(%rbp), %rax
-  addq $0, %rax
+  addq $8, %rax
   movq %rax, %rcx
   popq %rax
   movq %rax, (%rcx)
@@ -332,7 +332,7 @@ movl $0, %eax
     movq -112(%rbp), %rsp
     movq -40(%rbp), %rax
     movq %rax, %r10
-    movq 0(%r10), %rax
+    movq 8(%r10), %rax
 movq %rax, %rdx
 leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
@@ -341,7 +341,7 @@ movl $0, %eax
     subq $32, %rsp
     call printf
     movq -112(%rbp), %rsp
-    movq $8, %rcx
+    movq $32, %rcx
     movq %rsp, -112(%rbp)
     andq $-16, %rsp
     subq $32, %rsp
@@ -358,31 +358,31 @@ movq %rax, -48(%rbp)
   movq $0, %rax
   pushq %rax
     movq -48(%rbp), %rax
-  addq $0, %rax
+  addq $8, %rax
   movq %rax, %rcx
   popq %rax
   movq %rax, (%rcx)
   movq $10, %rax
   pushq %rax
     movq -48(%rbp), %rax
-  addq $0, %rax
+  addq $16, %rax
   movq %rax, %rcx
   popq %rax
   movq %rax, (%rcx)
   movq $5, %rax
   pushq %rax
     movq -48(%rbp), %rax
-  addq $0, %rax
+  addq $24, %rax
   movq %rax, %rcx
   popq %rax
   movq %rax, (%rcx)
     movq -48(%rbp), %rax
     movq %rax, %r10
-    movq 0(%r10), %rax
+    movq 24(%r10), %rax
     pushq %rax
     movq -48(%rbp), %rax
     movq %rax, %r10
-    movq 0(%r10), %rax
+    movq 16(%r10), %rax
     pushq %rax
     popq %rcx
     popq %rdx
@@ -403,7 +403,7 @@ movl $0, %eax
     movq -112(%rbp), %rsp
     movq -40(%rbp), %rax
     movq %rax, %r10
-    movq 0(%r10), %rax
+    movq 8(%r10), %rax
     pushq %rax
     movq -40(%rbp), %rax
     movq %rax, %r10
@@ -428,7 +428,7 @@ movl $0, %eax
     movq -112(%rbp), %rsp
     movq -40(%rbp), %rax
     movq %rax, %r10
-    movq 0(%r10), %rax
+    movq 8(%r10), %rax
     pushq %rax
     movq -40(%rbp), %rax
     movq %rax, %r10

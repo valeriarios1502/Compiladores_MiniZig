@@ -23,6 +23,13 @@ namespace {
         }
         return escaped.str();
     }
+
+    std::string stripPointerType(std::string typeName) {
+        while (!typeName.empty() && typeName[0] == '*') {
+            typeName = typeName.substr(1);
+        }
+        return typeName;
+    }
 }
 
 int GenCodeVisitor::getLocalSlot(const string& nombre) {
@@ -123,8 +130,13 @@ void GenCodeVisitor::genAddress(Exp* lval) {
     } else if (auto p = dynamic_cast<PuntoExp*>(lval)) {
         p->exp->accept(this);
         int off = 0;
-        if (!lastTypeName.empty() && structFieldOffsets.count(lastTypeName)) {
-            auto& campos = structFieldOffsets[lastTypeName];
+        std::string baseType = lastTypeName;
+        if (auto id = dynamic_cast<IdExp*>(p->exp)) {
+            auto typeIt = variableTypes.find(id->value);
+            if (typeIt != variableTypes.end()) baseType = stripPointerType(typeIt->second);
+        }
+        if (!baseType.empty() && structFieldOffsets.count(baseType)) {
+            auto& campos = structFieldOffsets[baseType];
             auto it = campos.find(p->id);
             if (it != campos.end()) off = it->second;
         }
@@ -308,6 +320,17 @@ void GenCodeVisitor::visit(ConstDec *c) {
 }
 
 void GenCodeVisitor::visit(VarDec *v) {
+    if (auto unionType = dynamic_cast<UnionType*>(v->tipo)) {
+        int numeroCampos = (int)unionType->campo_nombres.size();
+        structFields[unionType->nombre] = numeroCampos;
+
+        std::unordered_map<std::string,int> offsets;
+        for (int i = 0; i < numeroCampos; i++)
+            offsets[unionType->campo_nombres[i]] = i * 8;
+        structFieldOffsets[unionType->nombre] = offsets;
+        return;
+    }
+
     if (!this->dentroDeFuncion) {
         out << ".data\n";
         out << ".global g_" << v->nombre << "\n";
@@ -479,6 +502,11 @@ Value GenCodeVisitor::visit(CharExp *exp) {
 }
 
 Value GenCodeVisitor::visit(IdExp *exp) {
+    auto typeIt = variableTypes.find(exp->value);
+    if (typeIt != variableTypes.end()) {
+        lastTypeName = stripPointerType(typeIt->second);
+    }
+
     if (posicion.count(exp->value)) {
         int varOffset = posicion[exp->value];
         out << "    movq " << (-8 * varOffset) << "(%rbp), %rax\n";
@@ -605,8 +633,14 @@ Value GenCodeVisitor::visit(PuntoExp *e) {
     out << "    movq %rax, %r10\n";
 
     int offsetCampo = 0;
-    if (!lastTypeName.empty() && structFieldOffsets.count(lastTypeName)) {
-        auto& campos = structFieldOffsets[lastTypeName];
+    std::string baseType = lastTypeName;
+    if (auto id = dynamic_cast<IdExp*>(e->exp)) {
+        auto typeIt = variableTypes.find(id->value);
+        if (typeIt != variableTypes.end()) baseType = stripPointerType(typeIt->second);
+    }
+
+    if (!baseType.empty() && structFieldOffsets.count(baseType)) {
+        auto& campos = structFieldOffsets[baseType];
         auto it = campos.find(e->id);
         if (it != campos.end()) offsetCampo = it->second;
     }
@@ -759,6 +793,14 @@ void GenCodeVisitor::visit(AsignStmt* stm) {
         posicion[stm->variable] = base;
         contador += tam;          
         return;                   
+    }
+
+    if (stm->tipoDeclarado) {
+        stm->tipoDeclarado->accept(this);
+        variableTypes[stm->variable] = lastTypeName;
+    } else if (auto newExp = dynamic_cast<NewExp*>(stm->exp)) {
+        newExp->tipo->accept(this);
+        variableTypes[stm->variable] = "*" + lastTypeName;
     }
 
     stm->exp->accept(this);
@@ -925,10 +967,31 @@ void GenCodeVisitor::visit(DerefAssignStmt* stm) {
 // -----------------------------------------------------------------------------
 
 //no generan codigo
-void GenCodeVisitor::visit(IdType* tipo) {}
-void GenCodeVisitor::visit(PointerType* tipo) {}
-void GenCodeVisitor::visit(ArrayType* tipo) {}
-void GenCodeVisitor::visit(OptionalType* tipo) {}
-void GenCodeVisitor::visit(ErrorType* tipo) {}
-void GenCodeVisitor::visit(UnionType* tipo) {}
-void GenCodeVisitor::visit(EnumType* tipo) {}
+void GenCodeVisitor::visit(IdType* tipo) {
+    lastTypeName = tipo->id;
+}
+
+void GenCodeVisitor::visit(PointerType* tipo) {
+    if (tipo->tipo) tipo->tipo->accept(this);
+    lastTypeName = "*" + lastTypeName;
+}
+
+void GenCodeVisitor::visit(ArrayType* tipo) {
+    if (tipo->tipo) tipo->tipo->accept(this);
+}
+
+void GenCodeVisitor::visit(OptionalType* tipo) {
+    if (tipo->tipo) tipo->tipo->accept(this);
+}
+
+void GenCodeVisitor::visit(ErrorType* tipo) {
+    if (tipo->tipo) tipo->tipo->accept(this);
+}
+
+void GenCodeVisitor::visit(UnionType* tipo) {
+    lastTypeName = tipo->nombre;
+}
+
+void GenCodeVisitor::visit(EnumType* tipo) {
+    lastTypeName = tipo->nombre;
+}
