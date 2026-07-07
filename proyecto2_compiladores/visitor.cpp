@@ -39,6 +39,11 @@ namespace {
         std::string normalized = stripPointerType(typeName);
         return normalized == "str" || normalized == "string" || normalized == "String";
     }
+
+    bool isCharLikeType(const std::string& typeName) {
+        std::string normalized = stripPointerType(typeName);
+        return normalized == "char";
+    }
 }
 
 int GenCodeVisitor::getLocalSlot(const string& nombre) {
@@ -162,6 +167,26 @@ void GenCodeVisitor::genAddress(Exp* lval) {
 namespace {
     bool getConstInt(Exp* e, int& out) {
         if (auto n = dynamic_cast<NumberExpDecimal*>(e)) { out = n->value; return true; }
+        return false;
+    }
+
+    bool getConstFloat(Exp* e, double& out) {
+        if (auto n = dynamic_cast<NumberExpFlotante*>(e)) { out = n->value; return true; }
+        if (auto n = dynamic_cast<NumberExpDecimal*>(e))  { out = (double)n->value; return true; }
+        return false;
+    }
+
+    bool getConstChar(Exp* e, char& out) {
+        if (auto n = dynamic_cast<CharExp*>(e)) { out = n->valor; return true; }
+        return false;
+    }
+
+    bool getConstString(Exp* e, std::string& out) {
+        if (auto n = dynamic_cast<StringExp*>(e)) { out = n->valor; return true; }
+        return false;
+    }
+    bool getConstBool(Exp* e, bool& out) {
+        if (auto n = dynamic_cast<BoolExp*>(e)) { out = (n->booleano == "true"); return true; }
         return false;
     }
 }
@@ -352,6 +377,7 @@ void GenCodeVisitor::visit(Programa *program) {
     out << ".data\n";
     out << "print_int_fmt: .string \"%ld\\n\"\n";
     out << "print_str_fmt: .string \"%s\\n\"\n";
+    out << "print_char_fmt: .string \"%c\\n\"\n";   // NUEVO
     out << "\n.text\n";
 
     for (auto dec : program->declist)
@@ -416,14 +442,39 @@ void GenCodeVisitor::visit(ConstDec *c) {
     globales[c->nombre] = true;
     globalNames[c->nombre] = c->nombre;
 
-    out << ".data\n";
-    out << ".global " << c->nombre << "\n";
-    out << c->nombre << ":\n";
+    bool esString = false;
+    std::string valorStr;
 
-    int valor = 0;
-    if (c->exp != nullptr) getConstInt(c->exp, valor);
-    out << "    .quad " << valor << "\n";
-    out << ".text\n";
+    if (c->exp != nullptr) {
+        esString = getConstString(c->exp, valorStr);
+    }
+
+    if (esString) {
+        std::string labelLit = c->nombre + "_str";
+        emitStringData(labelLit, valorStr);
+
+        out << ".data\n";
+        out << ".global " << c->nombre << "\n";
+        out << c->nombre << ":\n";
+        out << "    .quad " << labelLit << "\n";
+        out << ".text\n";
+    } else {
+        long valor = 0;
+
+        if (c->exp != nullptr) {
+            int vi; double vf; char vc; bool vb;
+            if (getConstInt(c->exp, vi))         valor = vi;
+            else if (getConstFloat(c->exp, vf))  valor = (long)vf;
+            else if (getConstChar(c->exp, vc))   valor = (long)vc;
+            else if (getConstBool(c->exp, vb))   valor = vb ? 1 : 0;
+        }
+
+        out << ".data\n";
+        out << ".global " << c->nombre << "\n";
+        out << c->nombre << ":\n";
+        out << "    .quad " << valor << "\n";
+        out << ".text\n";
+    }
 }
 
 void GenCodeVisitor::visit(VarDec *v) {
@@ -438,21 +489,51 @@ void GenCodeVisitor::visit(VarDec *v) {
         return;
     }
 
+    std::string tipoDeclarado;
+    if (v->tipo) {
+        v->tipo->accept(this);
+        tipoDeclarado = lastTypeName;
+    }
+    variableTypes[v->nombre] = tipoDeclarado;
+
+    bool esString = isStringLikeType(tipoDeclarado);
+
     if (!this->dentroDeFuncion) {
         globales[v->nombre] = true;
         globalNames[v->nombre] = "g_" + v->nombre;
 
-        out << ".data\n";
-        out << ".global g_" << v->nombre << "\n";
-        out << "g_" << v->nombre << ":\n";
+        if (esString) {
+            std::string valorStr;
+            if (v->exp != nullptr) getConstString(v->exp, valorStr);
 
-        int valor = 0;
-        if (v->exp != nullptr) getConstInt(v->exp, valor);
-        out << "    .quad " << valor << "\n";
-        out << ".text\n";
+            std::string labelLit = "g_" + v->nombre + "_str";
+            emitStringData(labelLit, valorStr); 
+
+            out << ".data\n";
+            out << ".global g_" << v->nombre << "\n";
+            out << "g_" << v->nombre << ":\n";
+            out << "    .quad " << labelLit << "\n"; 
+            out << ".text\n";
+        }
+        else {
+    long valor = 0;
+
+    if (v->exp != nullptr) {
+        int vi; double vf; char vc; bool vb;
+        if (getConstInt(v->exp, vi))         valor = vi;
+        else if (getConstFloat(v->exp, vf))  valor = (long)vf;
+        else if (getConstChar(v->exp, vc))   valor = (long)vc;
+        else if (getConstBool(v->exp, vb))   valor = vb ? 1 : 0; 
+    }
+
+    out << ".data\n";
+    out << ".global g_" << v->nombre << "\n";
+    out << "g_" << v->nombre << ":\n";
+    out << "    .quad " << valor << "\n";
+    out << ".text\n";
+}
     } 
     else {
-        
         if (posicion.count(v->nombre) == 0) {
             int nuevoOffset = posicion.size() + 1;
             posicion[v->nombre] = nuevoOffset;
@@ -945,13 +1026,18 @@ void GenCodeVisitor::visit(PrintStmt* stm) {
     stm->exp->accept(this);
 
     bool printAsString = dynamic_cast<StringExp*>(stm->exp) != nullptr || isStringLikeType(lastTypeName);
+    bool printAsChar   = dynamic_cast<CharExp*>(stm->exp) != nullptr   || isCharLikeType(lastTypeName);
+
+    out << "movq %rax, " << argRegister(1) << endl;
+
     if (printAsString) {
-        out << "movq %rax, " << argRegister(1) << endl;
         out << "leaq print_str_fmt(%rip), " << argRegister(0) << endl;
+    } else if (printAsChar) {
+        out << "leaq print_char_fmt(%rip), " << argRegister(0) << endl;
     } else {
-        out << "movq %rax, " << argRegister(1) << endl;
         out << "leaq print_int_fmt(%rip), " << argRegister(0) << endl;
     }
+
     out << "movl $0, %eax" << endl;
     emitCall("printf");
 }

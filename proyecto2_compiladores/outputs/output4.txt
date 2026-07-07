@@ -1,6 +1,7 @@
 .data
 print_int_fmt: .string "%ld\n"
 print_str_fmt: .string "%s\n"
+print_char_fmt: .string "%c\n"
 
 .text
 
@@ -153,3 +154,5 @@ end_main:
     movq $0, %rax
     leave
     ret
+
+.section .note.GNU-stack,"",@progbits
