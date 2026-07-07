@@ -146,6 +146,7 @@ public:
     std::string lastTypeName = "";
     std::unordered_map<std::string, int> posicion;
     std::unordered_map<std::string, bool> globales;
+    std::unordered_map<std::string, std::string> globalNames;
 
     TypeCheckerVisitor* tiposPtr;
 

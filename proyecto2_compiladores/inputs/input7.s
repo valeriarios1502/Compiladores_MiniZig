@@ -8,7 +8,7 @@ clasifica:
     pushq %rbp
     movq %rsp, %rbp
     subq $16, %rsp
-    movq %rcx, -8(%rbp)
+    movq %rdi, -8(%rbp)
     movq -8(%rbp), %rax
   movq %rax, %r10
   movq $1, %rax
@@ -26,56 +26,40 @@ switch_0_case_0:
 str_1: .string "uno"
 .text
     leaq str_1(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
     call printf
-    movq -16(%rbp), %rsp
   jmp endswitch_0
 switch_0_case_1:
 .data
 str_2: .string "dos"
 .text
     leaq str_2(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
     call printf
-    movq -16(%rbp), %rsp
   jmp endswitch_0
 switch_0_case_2:
 .data
 str_3: .string "tres"
 .text
     leaq str_3(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
     call printf
-    movq -16(%rbp), %rsp
   jmp endswitch_0
 switch_0_default:
 .data
 str_4: .string "otro"
 .text
     leaq str_4(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
     call printf
-    movq -16(%rbp), %rsp
 endswitch_0:
 end_clasifica:
     movq $0, %rax
@@ -86,7 +70,7 @@ diasemana:
     pushq %rbp
     movq %rsp, %rbp
     subq $16, %rsp
-    movq %rcx, -8(%rbp)
+    movq %rdi, -8(%rbp)
     movq -8(%rbp), %rax
   movq %rax, %r10
   movq $1, %rax
@@ -110,84 +94,60 @@ switch_5_case_0:
 str_6: .string "lunes"
 .text
     leaq str_6(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
     call printf
-    movq -16(%rbp), %rsp
   jmp endswitch_5
 switch_5_case_1:
 .data
 str_7: .string "martes"
 .text
     leaq str_7(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
     call printf
-    movq -16(%rbp), %rsp
   jmp endswitch_5
 switch_5_case_2:
 .data
 str_8: .string "miercoles"
 .text
     leaq str_8(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
     call printf
-    movq -16(%rbp), %rsp
   jmp endswitch_5
 switch_5_case_3:
 .data
 str_9: .string "jueves"
 .text
     leaq str_9(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
     call printf
-    movq -16(%rbp), %rsp
   jmp endswitch_5
 switch_5_case_4:
 .data
 str_10: .string "viernes"
 .text
     leaq str_10(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
     call printf
-    movq -16(%rbp), %rsp
   jmp endswitch_5
 switch_5_default:
 .data
 str_11: .string "fin de semana"
 .text
     leaq str_11(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
     call printf
-    movq -16(%rbp), %rsp
 endswitch_5:
 end_diasemana:
     movq $0, %rax
@@ -200,78 +160,42 @@ main:
     subq $16, %rsp
   movq $1, %rax
     pushq %rax
-    popq %rcx
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
+    popq %rdi
     call clasifica
-    movq -16(%rbp), %rsp
   movq $2, %rax
     pushq %rax
-    popq %rcx
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
+    popq %rdi
     call clasifica
-    movq -16(%rbp), %rsp
   movq $3, %rax
     pushq %rax
-    popq %rcx
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
+    popq %rdi
     call clasifica
-    movq -16(%rbp), %rsp
   movq $5, %rax
     pushq %rax
-    popq %rcx
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
+    popq %rdi
     call clasifica
-    movq -16(%rbp), %rsp
   movq $1, %rax
     pushq %rax
-    popq %rcx
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
+    popq %rdi
     call diasemana
-    movq -16(%rbp), %rsp
   movq $3, %rax
     pushq %rax
-    popq %rcx
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
+    popq %rdi
     call diasemana
-    movq -16(%rbp), %rsp
   movq $5, %rax
     pushq %rax
-    popq %rcx
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
+    popq %rdi
     call diasemana
-    movq -16(%rbp), %rsp
   movq $6, %rax
     pushq %rax
-    popq %rcx
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
+    popq %rdi
     call diasemana
-    movq -16(%rbp), %rsp
   movq $2, %rax
 movq %rax, -8(%rbp)
     movq -8(%rbp), %rax
     pushq %rax
-    popq %rcx
-    movq %rsp, -16(%rbp)
-    andq $-16, %rsp
-    subq $32, %rsp
+    popq %rdi
     call clasifica
-    movq -16(%rbp), %rsp
 end_main:
     movq $0, %rax
     leave

@@ -30,6 +30,15 @@ namespace {
         }
         return typeName;
     }
+
+    std::string globalSymbolName(const std::string& name) {
+        return "g_" + name;
+    }
+
+    bool isStringLikeType(const std::string& typeName) {
+        std::string normalized = stripPointerType(typeName);
+        return normalized == "str" || normalized == "string" || normalized == "String";
+    }
 }
 
 int GenCodeVisitor::getLocalSlot(const string& nombre) {
@@ -81,40 +90,16 @@ void GenCodeVisitor::emitArrayElementCount(ArrayType* tipo) {
 }
 
 size_t GenCodeVisitor::maxRegisterArgs() const {
-#ifdef _WIN32
-    return 4;
-#else
     return 6;
-#endif
 }
 
 const char* GenCodeVisitor::argRegister(size_t index) const {
-#ifdef _WIN32
-    static const char* argRegs[] = {"%rcx", "%rdx", "%r8", "%r9"};
-#else
     static const char* argRegs[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
-#endif
     return index < maxRegisterArgs() ? argRegs[index] : nullptr;
 }
 
 void GenCodeVisitor::emitCall(const std::string& nombre) {
-#ifdef _WIN32
-    if (callScratchOffset > 0) {
-        out << "    movq %rsp, " << (-callScratchOffset) << "(%rbp)\n";
-    } else {
-        out << "    movq %rsp, %r11\n";
-    }
-    out << "    andq $-16, %rsp\n";
-    out << "    subq $32, %rsp\n";
     out << "    call " << nombre << "\n";
-    if (callScratchOffset > 0) {
-        out << "    movq " << (-callScratchOffset) << "(%rbp), %rsp\n";
-    } else {
-        out << "    movq %r11, %rsp\n";
-    }
-#else
-    out << "    call " << nombre << "\n";
-#endif
 }
 
 void GenCodeVisitor::emitStringData(const std::string& label, const std::string& value) {
@@ -354,7 +339,16 @@ void GenCodeVisitor::gencode(Programa* program){
 }
 
 void GenCodeVisitor::visit(Programa *program) {
-    
+    bool hasMain = false;
+    for (auto dec : program->declist) {
+        if (auto fundec = dynamic_cast<Fundec*>(dec)) {
+            if (fundec->nombre == "main") {
+                hasMain = true;
+                break;
+            }
+        }
+    }
+
     out << ".data\n";
     out << "print_int_fmt: .string \"%ld\\n\"\n";
     out << "print_str_fmt: .string \"%s\\n\"\n";
@@ -362,6 +356,16 @@ void GenCodeVisitor::visit(Programa *program) {
 
     for (auto dec : program->declist)
         dec->accept(this);
+
+    if (!hasMain) {
+        out << "\n.globl main\n";
+        out << "main:\n";
+        out << "    pushq %rbp\n";
+        out << "    movq %rsp, %rbp\n";
+        out << "    movq $0, %rax\n";
+        out << "    leave\n";
+        out << "    ret\n";
+    }
 
 #ifndef _WIN32
     out << "\n.section .note.GNU-stack,\"\",@progbits\n";
@@ -390,7 +394,7 @@ void GenCodeVisitor::visit(Template *t) {
     out << "    movq %rsp, %rbp\n";
 
     int bytes = alignStackBytes(funcontador[nombreCompleto] * 8 + 8);
-    callScratchOffset = bytes;
+    callScratchOffset = 0;
 
     out << "    subq $" << bytes << ", %rsp\n";
 
@@ -409,6 +413,9 @@ void GenCodeVisitor::visit(Template *t) {
 }
 
 void GenCodeVisitor::visit(ConstDec *c) {
+    globales[c->nombre] = true;
+    globalNames[c->nombre] = c->nombre;
+
     out << ".data\n";
     out << ".global " << c->nombre << "\n";
     out << c->nombre << ":\n";
@@ -432,6 +439,9 @@ void GenCodeVisitor::visit(VarDec *v) {
     }
 
     if (!this->dentroDeFuncion) {
+        globales[v->nombre] = true;
+        globalNames[v->nombre] = "g_" + v->nombre;
+
         out << ".data\n";
         out << ".global g_" << v->nombre << "\n";
         out << "g_" << v->nombre << ":\n";
@@ -481,7 +491,7 @@ void GenCodeVisitor::visit(Fundec* dec) {
     out << "    movq %rsp, %rbp\n";
 
     int bytes = alignStackBytes(funcontador[dec->nombre] * 8 + 8);
-    callScratchOffset = bytes;
+    callScratchOffset = 0;
 
     out << "    subq $" << bytes << ", %rsp\n";
 
@@ -610,7 +620,7 @@ Value GenCodeVisitor::visit(IdExp *exp) {
         out << "    movq " << (-8 * varOffset) << "(%rbp), %rax\n";
     } 
     else if (globales.count(exp->value)) {
-        out << "    movq " << exp->value << "(%rip), %rax\n";
+        out << "    movq " << globalNames[exp->value] << "(%rip), %rax\n";
     } 
     else {
         std::cerr << "Error en compilación: Variable '" << exp->value << "' no declarada.\n";
@@ -650,7 +660,7 @@ Value GenCodeVisitor::visit(UnaryExp *exp) {
                 if (posicion.count(id->value)) {
                     out << "    leaq " << (-8 * posicion[id->value]) << "(%rbp), %rax\n";
                 } else if (globales.count(id->value)) {
-                    out << "    leaq " << id->value << "(%rip), %rax\n";
+                    out << "    leaq " << globalNames[id->value] << "(%rip), %rax\n";
                 }
             }
             break;
@@ -699,7 +709,7 @@ Value GenCodeVisitor::visit(ReferenceExp* exp) {
         if (posicion.count(id->value))
             out << "leaq " << (-8 * posicion[id->value]) << "(%rbp), %rax" << endl;
         else if (globales.count(id->value))
-            out << "leaq g_" << id->value << "(%rip), %rax" << endl;
+            out << "leaq " << globalNames[id->value] << "(%rip), %rax" << endl;
         else {
             out << "# advertencia: referencia a variable no declarada" << endl;
             out << "movq $0, %rax" << endl;
@@ -923,7 +933,7 @@ void GenCodeVisitor::visit(AsignStmt* stm) {
 
     if (!expEmitida) stm->exp->accept(this);
     if (globales.count(stm->variable) && !posicion.count(stm->variable)) {
-        out << "movq %rax, g_" << stm->variable << "(%rip)" << endl;
+        out << "movq %rax, " << globalNames[stm->variable] << "(%rip)" << endl;
     } else {
         int slot = getLocalSlot(stm->variable);
         out << "movq %rax, " << (-8 * slot) << "(%rbp)" << endl;
@@ -931,8 +941,11 @@ void GenCodeVisitor::visit(AsignStmt* stm) {
 }
 
 void GenCodeVisitor::visit(PrintStmt* stm) {
+    lastTypeName.clear();
     stm->exp->accept(this);
-    if (dynamic_cast<StringExp*>(stm->exp)) {
+
+    bool printAsString = dynamic_cast<StringExp*>(stm->exp) != nullptr || isStringLikeType(lastTypeName);
+    if (printAsString) {
         out << "movq %rax, " << argRegister(1) << endl;
         out << "leaq print_str_fmt(%rip), " << argRegister(0) << endl;
     } else {

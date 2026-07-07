@@ -51,6 +51,11 @@ for i in range(1, 11):
                 if asm_build.returncode == 0:
                     asm_run = run_capture([asm_exe])
 
+        asm_text = ""
+        if os.path.isfile(asm_file):
+            with open(asm_file, "r", encoding="utf-8") as f:
+                asm_text = f.read()
+
         stdout_text = ""
         stderr_text = ""
 
@@ -58,21 +63,16 @@ for i in range(1, 11):
             stderr_text = result.stderr
         elif not os.path.isfile(asm_file):
             stderr_text = "No se genero assembly correctamente.\n"
-        elif asm_build and asm_build.returncode != 0:
-            stderr_text = asm_build.stderr
-        elif asm_run:
-            stdout_text = asm_run.stdout
-            stderr_text = asm_run.stderr
         else:
-            stderr_text = "No se pudo ejecutar el assembly generado.\n"
+            stderr_text = "Assembly generado correctamente.\n"
 
-        # Guardar salida final del programa generado
+        # Guardar el codigo x86 generado en el archivo de salida solicitado
         output_file = os.path.join(output_dir, f"output{i}.txt")
         with open(output_file, "w", encoding="utf-8") as f:
-            f.write("=== STDOUT ===\n")
-            f.write(stdout_text)
-            f.write("\n=== STDERR ===\n")
-            f.write(stderr_text)
+            if asm_text:
+                f.write(asm_text)
+            else:
+                f.write("No se genero assembly correctamente.\n")
 
         # Archivos generados
         tokens_file = os.path.join(input_dir, f"input{i}_tokens.txt")  # se crea en inputs/
