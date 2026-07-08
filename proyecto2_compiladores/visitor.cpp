@@ -1478,9 +1478,6 @@ void GenCodeVisitor::visit(ReturnStm* stm) {
     out << "pushq %rax\n";
     emitirDefers();
     out << "popq %rax\n";
-
-    out << "leave" << endl;
-    out << "ret" << endl;
 }
 
 void GenCodeVisitor::visit(DeleteStm* stm) {
