@@ -1,0 +1,12 @@
+.git
+.agents
+.codex
+
+**/.DS_Store
+**/node_modules
+**/*.log
+
+proyecto2_compiladores/*.exe
+proyecto2_compiladores/inputs/*.s
+proyecto2_compiladores/inputs/*_tokens.txt
+proyecto2_compiladores/outputs

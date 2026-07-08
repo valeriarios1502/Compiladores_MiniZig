@@ -1,0 +1,21 @@
+FROM node:22-bookworm-slim AS runtime
+
+ENV NODE_ENV=production
+ENV PORT=3001
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends g++ ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY proyecto2_compiladores ./proyecto2_compiladores
+
+WORKDIR /app/proyecto2_compiladores
+
+RUN g++ -std=c++14 -o Proyecto2.exe \
+    main.cpp scanner.cpp token.cpp parser.cpp ast.cpp visitor.cpp Typechecker.cpp
+
+EXPOSE 3001
+
+CMD ["node", "backend/server.js"]
