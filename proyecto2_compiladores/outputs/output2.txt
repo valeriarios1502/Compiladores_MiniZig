@@ -9,8 +9,10 @@ main:
 pushq %rbp
 movq %rsp, %rbp
 subq $32, %rsp
-movq $24, %rdi
+movq $24, %rcx
+subq $32, %rsp
 call malloc
+addq $32, %rsp
 movq %rax, -8(%rbp)
 movq $10, %rax
 pushq %rax
@@ -36,26 +38,34 @@ movq %rax, (%rcx)
 movq -8(%rbp), %rax
 movq %rax, %r10
 movq 0(%r10), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq -8(%rbp), %rax
 movq %rax, %r10
 movq 8(%r10), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq -8(%rbp), %rax
 movq %rax, %r10
 movq 16(%r10), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
-movq $16, %rdi
+addq $32, %rsp
+movq $16, %rcx
+subq $32, %rsp
 call malloc
+addq $32, %rsp
 movq %rax, -16(%rbp)
 movq $99, %rax
 pushq %rax
@@ -67,12 +77,16 @@ movq %rax, (%rcx)
 movq -16(%rbp), %rax
 movq %rax, %r10
 movq 0(%r10), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
-movq $24, %rdi
+addq $32, %rsp
+movq $24, %rcx
+subq $32, %rsp
 call malloc
+addq $32, %rsp
 movq %rax, -24(%rbp)
 movq $255, %rax
 pushq %rax
@@ -98,24 +112,30 @@ movq %rax, (%rcx)
 movq -24(%rbp), %rax
 movq %rax, %r10
 movq 0(%r10), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq -24(%rbp), %rax
 movq %rax, %r10
 movq 8(%r10), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq -24(%rbp), %rax
 movq %rax, %r10
 movq 16(%r10), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 end_main:
 movq $0, %rax
 leave

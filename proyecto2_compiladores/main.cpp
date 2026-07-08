@@ -68,7 +68,7 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
-    ApplySimpleOptimizations(ast);
+    opt(ast);
 
     Op1Visitor opt1;
     opt1.Opt1(ast);

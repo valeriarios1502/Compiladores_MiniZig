@@ -9,7 +9,7 @@ factorial:
 pushq %rbp
 movq %rsp, %rbp
 subq $16, %rsp
-movq %rdi, -8(%rbp)
+movq %rcx, -8(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
 movq $1, %rax
@@ -37,8 +37,10 @@ movq %rax, %rcx
 popq %rax
 subq %rcx, %rax
 pushq %rax
-popq %rdi
+popq %rcx
+subq $32, %rsp
 call factorial
+addq $32, %rsp
 movq %rax, %rcx
 popq %rax
 imulq %rcx, %rax
@@ -56,7 +58,7 @@ fibonacci:
 pushq %rbp
 movq %rsp, %rbp
 subq $16, %rsp
-movq %rdi, -8(%rbp)
+movq %rcx, -8(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
 movq $1, %rax
@@ -82,8 +84,10 @@ movq %rax, %rcx
 popq %rax
 subq %rcx, %rax
 pushq %rax
-popq %rdi
+popq %rcx
+subq $32, %rsp
 call fibonacci
+addq $32, %rsp
 pushq %rax
 movq -8(%rbp), %rax
 pushq %rax
@@ -92,8 +96,10 @@ movq %rax, %rcx
 popq %rax
 subq %rcx, %rax
 pushq %rax
-popq %rdi
+popq %rcx
+subq $32, %rsp
 call fibonacci
+addq $32, %rsp
 movq %rax, %rcx
 popq %rax
 addq %rcx, %rax
@@ -111,8 +117,8 @@ area:
 pushq %rbp
 movq %rsp, %rbp
 subq $32, %rsp
-movq %rdi, -8(%rbp)
-movq %rsi, -16(%rbp)
+movq %rcx, -8(%rbp)
+movq %rdx, -16(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
 movq -16(%rbp), %rax
@@ -132,8 +138,8 @@ maximo:
 pushq %rbp
 movq %rsp, %rbp
 subq $32, %rsp
-movq %rdi, -8(%rbp)
-movq %rsi, -16(%rbp)
+movq %rcx, -8(%rbp)
+movq %rdx, -16(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
 movq -16(%rbp), %rax
@@ -167,8 +173,8 @@ minimo:
 pushq %rbp
 movq %rsp, %rbp
 subq $32, %rsp
-movq %rdi, -8(%rbp)
-movq %rsi, -16(%rbp)
+movq %rcx, -8(%rbp)
+movq %rdx, -16(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
 movq -16(%rbp), %rax
@@ -202,7 +208,7 @@ abs:
 pushq %rbp
 movq %rsp, %rbp
 subq $16, %rsp
-movq %rdi, -8(%rbp)
+movq %rcx, -8(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
 movq $0, %rax
@@ -239,46 +245,64 @@ movq %rsp, %rbp
 subq $112, %rsp
 movq $5, %rax
 pushq %rax
-popq %rdi
+popq %rcx
+subq $32, %rsp
 call factorial
+addq $32, %rsp
 movq %rax, -8(%rbp)
 movq -8(%rbp), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq $10, %rax
 pushq %rax
-popq %rdi
+popq %rcx
+subq $32, %rsp
 call factorial
+addq $32, %rsp
 movq %rax, -16(%rbp)
 movq -16(%rbp), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq $7, %rax
 pushq %rax
-popq %rdi
+popq %rcx
+subq $32, %rsp
 call fibonacci
+addq $32, %rsp
 movq %rax, -24(%rbp)
 movq -24(%rbp), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq $10, %rax
 pushq %rax
-popq %rdi
+popq %rcx
+subq $32, %rsp
 call fibonacci
+addq $32, %rsp
 movq %rax, -32(%rbp)
 movq -32(%rbp), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
-movq $16, %rdi
+addq $32, %rsp
+movq $16, %rcx
+subq $32, %rsp
 call malloc
+addq $32, %rsp
 movq %rax, -40(%rbp)
 movq $3, %rax
 pushq %rax
@@ -297,19 +321,25 @@ movq %rax, (%rcx)
 movq -40(%rbp), %rax
 movq %rax, %r10
 movq 0(%r10), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq -40(%rbp), %rax
 movq %rax, %r10
 movq 8(%r10), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
-movq $32, %rdi
+addq $32, %rsp
+movq $32, %rcx
+subq $32, %rsp
 call malloc
+addq $32, %rsp
 movq %rax, -48(%rbp)
 movq $0, %rax
 pushq %rax
@@ -351,10 +381,12 @@ popq %rax
 imulq %rcx, %rax
 movq %rax, -56(%rbp)
 movq -56(%rbp), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq -40(%rbp), %rax
 movq %rax, %r10
 movq 8(%r10), %rax
@@ -363,15 +395,19 @@ movq -40(%rbp), %rax
 movq %rax, %r10
 movq 0(%r10), %rax
 pushq %rax
-popq %rdi
-popq %rsi
+popq %rcx
+popq %rdx
+subq $32, %rsp
 call maximo
+addq $32, %rsp
 movq %rax, -64(%rbp)
 movq -64(%rbp), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq -40(%rbp), %rax
 movq %rax, %r10
 movq 8(%r10), %rax
@@ -380,28 +416,38 @@ movq -40(%rbp), %rax
 movq %rax, %r10
 movq 0(%r10), %rax
 pushq %rax
-popq %rdi
-popq %rsi
+popq %rcx
+popq %rdx
+subq $32, %rsp
 call minimo
+addq $32, %rsp
 movq %rax, -72(%rbp)
 movq -72(%rbp), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq $42, %rax
 negq %rax
 pushq %rax
-popq %rdi
+popq %rcx
+subq $32, %rsp
 call abs
+addq $32, %rsp
 movq %rax, -80(%rbp)
 movq -80(%rbp), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
-    movq $40, %rdi
+addq $32, %rsp
+    movq $40, %rcx
+subq $32, %rsp
 call malloc
+addq $32, %rsp
 movq %rax, -88(%rbp)
 movq $5, %rax
 pushq %rax
@@ -501,60 +547,72 @@ switch_6_case_0:
 str_7: .string "uno"
 .text
 leaq str_7(%rip), %rax
-movq %rax, %rsi
-leaq print_str_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_str_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
   jmp endswitch_6
 switch_6_case_1:
 .data
 str_8: .string "tres"
 .text
 leaq str_8(%rip), %rax
-movq %rax, %rsi
-leaq print_str_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_str_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
   jmp endswitch_6
 switch_6_case_2:
 .data
 str_9: .string "cinco"
 .text
 leaq str_9(%rip), %rax
-movq %rax, %rsi
-leaq print_str_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_str_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
   jmp endswitch_6
 switch_6_case_3:
 .data
 str_10: .string "ocho"
 .text
 leaq str_10(%rip), %rax
-movq %rax, %rsi
-leaq print_str_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_str_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
   jmp endswitch_6
 switch_6_case_4:
 .data
 str_11: .string "nueve"
 .text
 leaq str_11(%rip), %rax
-movq %rax, %rsi
-leaq print_str_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_str_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
   jmp endswitch_6
 switch_6_default:
 .data
 str_12: .string "otro"
 .text
 leaq str_12(%rip), %rax
-movq %rax, %rsi
-leaq print_str_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_str_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 endswitch_6:
 movq -96(%rbp), %rax
 pushq %rax
@@ -568,14 +626,20 @@ endwhile_5:
 movq $0, %rax
 pushq %rax
 movq -88(%rbp), %rax
-movq %rax, %rdi
+movq %rax, %rcx
+subq $32, %rsp
 call free
+addq $32, %rsp
 movq -48(%rbp), %rax
-movq %rax, %rdi
+movq %rax, %rcx
+subq $32, %rsp
 call free
+addq $32, %rsp
 movq -40(%rbp), %rax
-movq %rax, %rdi
+movq %rax, %rcx
+subq $32, %rsp
 call free
+addq $32, %rsp
 popq %rax
 leave
 ret

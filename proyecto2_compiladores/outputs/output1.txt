@@ -60,40 +60,54 @@ subq $16, %rsp
 movq $12, %rax
 movq %rax, -8(%rbp)
 movq g_x(%rip), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq g_h(%rip), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq g_b(%rip), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq g_s(%rip), %rax
-movq %rax, %rsi
-leaq print_str_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_str_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq g_ch(%rip), %rax
-movq %rax, %rsi
-leaq print_char_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_char_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq g_flag(%rip), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 movq MAX(%rip), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
+movq %rax, %rdx
+leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
+subq $32, %rsp
 call printf
+addq $32, %rsp
 end_main:
 movq $0, %rax
 leave

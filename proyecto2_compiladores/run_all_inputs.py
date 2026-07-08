@@ -45,7 +45,7 @@ for i in range(1, 11):
         asm_run = None
 
         if result.returncode == 0 and os.path.isfile(asm_file):
-            with tempfile.TemporaryDirectory(prefix=f"minizig_input{i}_") as temp_dir:
+            with tempfile.TemporaryDirectory(prefix=f"minizig_input{i}_", ignore_cleanup_errors=True) as temp_dir:
                 asm_exe = os.path.join(temp_dir, f"input{i}_program.exe")
                 asm_build = run_capture(["g++", asm_file, "-o", asm_exe])
                 if asm_build.returncode == 0:

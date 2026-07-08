@@ -515,16 +515,30 @@ void GenCodeVisitor::emitArrayElementCount(ArrayType* tipo) {
 }
 
 size_t GenCodeVisitor::maxRegisterArgs() const {
+#ifdef _WIN32
+    return 4;
+#else
     return 6;
+#endif
 }
 
 const char* GenCodeVisitor::argRegister(size_t index) const {
+#ifdef _WIN32
+    static const char* argRegs[] = {"%rcx", "%rdx", "%r8", "%r9"};
+#else
     static const char* argRegs[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+#endif
     return index < maxRegisterArgs() ? argRegs[index] : nullptr;
 }
 
 void GenCodeVisitor::emitCall(const std::string& nombre) {
+#ifdef _WIN32
+    out << "subq $32, %rsp\n";
+#endif
     out << "call " << nombre << "\n";
+#ifdef _WIN32
+    out << "addq $32, %rsp\n";
+#endif
 }
 
 void GenCodeVisitor::emitStringData(const std::string& label, const std::string& value) {
