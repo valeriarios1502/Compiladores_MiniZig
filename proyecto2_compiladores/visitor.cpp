@@ -587,7 +587,11 @@ void GenCodeVisitor::genAddress(Exp* lval) {
             auto typeIt = variableTypes.find(id->value);
             if (typeIt != variableTypes.end()) baseType = stripPointerType(typeIt->second);
         }
-        if (!baseType.empty() && structFieldOffsets.count(baseType)) {
+        if (!baseType.empty() && unionFieldOffsets.count(baseType)) {
+            auto& campos = unionFieldOffsets[baseType];
+            auto it = campos.find(p->id);
+            if (it != campos.end()) off = it->second;
+        } else if (!baseType.empty() && structFieldOffsets.count(baseType)) {
             auto& campos = structFieldOffsets[baseType];
             auto it = campos.find(p->id);
             if (it != campos.end()) off = it->second;
@@ -913,13 +917,11 @@ void GenCodeVisitor::visit(ConstDec *c) {
 
 void GenCodeVisitor::visit(VarDec *v) {
     if (auto unionType = dynamic_cast<UnionType*>(v->tipo)) {
-        int numeroCampos = (int)unionType->campo_nombres.size();
-        structFields[unionType->nombre] = numeroCampos;
-
         std::unordered_map<std::string,int> offsets;
-        for (int i = 0; i < numeroCampos; i++)
-            offsets[unionType->campo_nombres[i]] = i * 8;
-        structFieldOffsets[unionType->nombre] = offsets;
+        for (const auto& campo : unionType->campo_nombres)
+            offsets[campo] = 0;
+        unionFieldOffsets[unionType->nombre] = offsets;
+        unionSizes[unionType->nombre] = 8;
         return;
     }
 
@@ -1206,7 +1208,9 @@ Value GenCodeVisitor::visit(NewExp *e) {
 
     int tamanoBytes = 8; 
 
-    if (!this->lastTypeName.empty() && structFields.count(this->lastTypeName)) {
+    if (!this->lastTypeName.empty() && unionSizes.count(this->lastTypeName)) {
+        tamanoBytes = unionSizes[this->lastTypeName];
+    } else if (!this->lastTypeName.empty() && structFields.count(this->lastTypeName)) {
         int numeroCampos = structFields[this->lastTypeName];
         tamanoBytes = numeroCampos * 8;
     }
@@ -1276,7 +1280,11 @@ Value GenCodeVisitor::visit(PuntoExp *e) {
         if (typeIt != variableTypes.end()) baseType = stripPointerType(typeIt->second);
     }
 
-    if (!baseType.empty() && structFieldOffsets.count(baseType)) {
+    if (!baseType.empty() && unionFieldOffsets.count(baseType)) {
+        auto& campos = unionFieldOffsets[baseType];
+        auto it = campos.find(e->id);
+        if (it != campos.end()) offsetCampo = it->second;
+    } else if (!baseType.empty() && structFieldOffsets.count(baseType)) {
         auto& campos = structFieldOffsets[baseType];
         auto it = campos.find(e->id);
         if (it != campos.end()) offsetCampo = it->second;

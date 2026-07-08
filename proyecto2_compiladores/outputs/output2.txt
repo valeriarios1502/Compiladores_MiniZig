@@ -83,7 +83,7 @@ movl $0, %eax
 subq $32, %rsp
 call printf
 addq $32, %rsp
-movq $24, %rcx
+movq $8, %rcx
 subq $32, %rsp
 call malloc
 addq $32, %rsp
@@ -98,14 +98,14 @@ movq %rax, (%rcx)
 movq $128, %rax
 pushq %rax
 movq -24(%rbp), %rax
-  addq $8, %rax
+  addq $0, %rax
 movq %rax, %rcx
 popq %rax
 movq %rax, (%rcx)
 movq $0, %rax
 pushq %rax
 movq -24(%rbp), %rax
-  addq $16, %rax
+  addq $0, %rax
 movq %rax, %rcx
 popq %rax
 movq %rax, (%rcx)
@@ -120,7 +120,7 @@ call printf
 addq $32, %rsp
 movq -24(%rbp), %rax
 movq %rax, %r10
-movq 8(%r10), %rax
+movq 0(%r10), %rax
 movq %rax, %rdx
 leaq print_int_fmt(%rip), %rcx
 movl $0, %eax
@@ -129,7 +129,7 @@ call printf
 addq $32, %rsp
 movq -24(%rbp), %rax
 movq %rax, %r10
-movq 16(%r10), %rax
+movq 0(%r10), %rax
 movq %rax, %rdx
 leaq print_int_fmt(%rip), %rcx
 movl $0, %eax

@@ -141,6 +141,8 @@ public:
     std::unordered_map<std::string, int> funcontador;
     std::unordered_map<std::string, int> structFields;
     std::unordered_map<std::string, std::unordered_map<std::string, int>> structFieldOffsets;
+    std::unordered_map<std::string, int> unionSizes;
+    std::unordered_map<std::string, std::unordered_map<std::string, int>> unionFieldOffsets;
     std::unordered_map<std::string, int> memoria;
     std::unordered_map<std::string, std::string> variableTypes;
     std::unordered_map<std::string, bool> structAllocated;
