@@ -481,9 +481,9 @@ void GenCodeVisitor::emitirDefers() {
 }
 
 int GenCodeVisitor::alignStackBytes(int bytes) const {
-    if (bytes == 0) bytes = 16;
-    int rem = bytes % 16;
-    return rem == 0 ? bytes : bytes + (16 - rem);
+    if (bytes == 0) bytes = 0;
+    int rem = bytes % 8;
+    return rem == 0 ? bytes : bytes + (8 - rem);
 }
 
 int GenCodeVisitor::elementSizeBytes(Type* tipo) const {
@@ -857,7 +857,7 @@ void GenCodeVisitor::visit(Template *t) {
     out << "pushq %rbp\n";
     out << "movq %rsp, %rbp\n";
 
-    int bytes = alignStackBytes(funcontador[nombreCompleto] * 8 + 8);
+    int bytes = alignStackBytes(funcontador[nombreCompleto] * 8);
     callScratchOffset = 0;
 
     out << "subq $" << bytes << ", %rsp\n";
@@ -1007,7 +1007,7 @@ void GenCodeVisitor::visit(Fundec* dec) {
     out << "pushq %rbp\n";
     out << "movq %rsp, %rbp\n";
 
-    int bytes = alignStackBytes(funcontador[dec->nombre] * 8 + 8);
+    int bytes = alignStackBytes(funcontador[dec->nombre] * 8);
     callScratchOffset = 0;
 
     out << "subq $" << bytes << ", %rsp\n";
