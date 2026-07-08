@@ -54,47 +54,49 @@ MAX:
 .text
 .globl main
 main:
-    pushq %rbp
-    movq %rsp, %rbp
-    subq $16, %rsp
-    movq g_x(%rip), %rax
+pushq %rbp
+movq %rsp, %rbp
+subq $16, %rsp
+movq $12, %rax
+movq %rax, -8(%rbp)
+movq g_x(%rip), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-    call printf
-    movq g_h(%rip), %rax
+call printf
+movq g_h(%rip), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-    call printf
-    movq g_b(%rip), %rax
+call printf
+movq g_b(%rip), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-    call printf
-    movq g_s(%rip), %rax
+call printf
+movq g_s(%rip), %rax
 movq %rax, %rsi
 leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-    call printf
-    movq g_ch(%rip), %rax
+call printf
+movq g_ch(%rip), %rax
 movq %rax, %rsi
 leaq print_char_fmt(%rip), %rdi
 movl $0, %eax
-    call printf
-    movq g_flag(%rip), %rax
+call printf
+movq g_flag(%rip), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-    call printf
-    movq MAX(%rip), %rax
+call printf
+movq MAX(%rip), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-    call printf
+call printf
 end_main:
-    movq $0, %rax
-    leave
-    ret
+movq $0, %rax
+leave
+ret
 
 .section .note.GNU-stack,"",@progbits

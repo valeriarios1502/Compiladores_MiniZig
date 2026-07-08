@@ -9,6 +9,7 @@ var indef = undefined;
 const MAX = 100;
 
 pub fn main () void {
+  a = 3 + 4 + 5;
   print(x);
   print(h);
   print(b);

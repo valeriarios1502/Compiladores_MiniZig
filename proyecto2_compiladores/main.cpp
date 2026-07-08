@@ -68,6 +68,14 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
+    Op1Visitor opt1;
+    opt1.Opt1(ast);
+
+    Op2Visitor opt2;
+    opt2.Opt2(ast);
+
+    
+
     GenCodeVisitor code(outfile);
 
     try {

@@ -58,6 +58,16 @@ class Body;
 class Programa;
 class TypeCheckerVisitor;
 
+struct CFValue {
+    bool      is_const = false;
+    long long int_val  = 0;
+    double    dbl_val  = 0.0;
+ 
+    CFValue() = default;
+    explicit CFValue(long long v) : is_const(true), int_val(v),    dbl_val((double)v) {}
+    explicit CFValue(double    v) : is_const(true), int_val((long long)v), dbl_val(v) {}
+};
+
 class Visitor {
 public:
     virtual ~Visitor() = default;
@@ -237,6 +247,135 @@ public:
     void visit(Body* b)     override;
     void visit(Programa* p) override;
 };
+
+
+// Constant folding visitor
+
+
+class Op1Visitor : public Visitor {
+public:
+    Value Opt1(Programa *program);
+
+    Value visit(BinaryExp* exp);
+    Value visit(NumberExpDecimal* exp);
+    Value visit(NumberExpFlotante* exp);
+    Value visit(StringExp* exp);
+    Value visit(CharExp* exp);
+    Value visit(IdExp* exp);
+    Value visit(BoolExp* exp);
+    Value visit(FcallExp* exp);
+    Value visit(UnaryExp* exp);
+    Value visit(NewExp* exp);
+    Value visit(NullExp* exp);
+    Value visit(UndefinedExp* exp);
+    Value visit(ReferenceExp* exp);
+    Value visit(PunteroExp* exp);
+    Value visit(AlgoconcorchetesylistaExp* exp);
+    Value visit(AlgoconcorchetesExp* exp);
+    Value visit(PuntoExp* exp);
+    Value visit(LambdaExp* exp);
+    Value visit(NotExp* exp);
+
+
+    void visit(IfStmt* stm);
+    void visit(WhileStmt* stm);
+    void visit(BodyStmt* stm);
+    void visit(AsignStmt* stm);
+    void visit(PrintStmt* stm);
+    void visit(ReturnStm* stm);
+    void visit(DeleteStm* stm);
+    void visit(ContinueStm* stm);
+    void visit(BreakStmt* stm);
+    void visit(SwitchStmt* stm);
+    void visit(TryStmt* stm);
+    void visit(DeferStmt* stm);
+    void visit(ForStmt* stm);
+    void visit(DerefAssignStmt* e);
+
+
+    void visit(Fundec* fd);
+    void visit(Structdec* sd);
+    void visit(VarDec* vd);
+    void visit(ConstDec* cd);
+    void visit(Template* t);
+
+
+    void visit(IdType* tipo);
+    void visit(PointerType* tipo);
+    void visit(ArrayType* tipo);
+    void visit(OptionalType* tipo);
+    void visit(ErrorType* tipo);
+    void visit(UnionType* tipo);
+    void visit(EnumType* tipo);
+
+
+    virtual void visit(Body* b);
+    virtual void visit(Programa* p);
+};
+
+
+// Selthi-Ulman visitor
+class Op2Visitor : public Visitor {
+public:
+
+    Value Opt2(Programa *program);
+    Value visit(BinaryExp* exp);
+    Value visit(NumberExpDecimal* exp);
+    Value visit(NumberExpFlotante* exp);
+    Value visit(StringExp* exp);
+    Value visit(CharExp* exp);
+    Value visit(IdExp* exp);
+    Value visit(BoolExp* exp);
+    Value visit(FcallExp* exp);
+    Value visit(UnaryExp* exp);
+    Value visit(NewExp* exp);
+    Value visit(NullExp* exp);
+    Value visit(UndefinedExp* exp);
+    Value visit(ReferenceExp* exp);
+    Value visit(PunteroExp* exp);
+    Value visit(AlgoconcorchetesylistaExp* exp);
+    Value visit(AlgoconcorchetesExp* exp);
+    Value visit(PuntoExp* exp);
+    Value visit(LambdaExp* exp);
+    Value visit(NotExp* exp);
+
+
+    void visit(IfStmt* stm);
+    void visit(WhileStmt* stm);
+    void visit(BodyStmt* stm);
+    void visit(AsignStmt* stm);
+    void visit(PrintStmt* stm);
+    void visit(ReturnStm* stm);
+    void visit(DeleteStm* stm);
+    void visit(ContinueStm* stm);
+    void visit(BreakStmt* stm);
+    void visit(SwitchStmt* stm);
+    void visit(TryStmt* stm);
+    void visit(DeferStmt* stm);
+    void visit(ForStmt* stm);
+    void visit(DerefAssignStmt* e);
+
+
+    void visit(Fundec* fd);
+    void visit(Structdec* sd);
+    void visit(VarDec* vd);
+    void visit(ConstDec* cd);
+    void visit(Template* t);
+
+
+    void visit(IdType* tipo);
+    void visit(PointerType* tipo);
+    void visit(ArrayType* tipo);
+    void visit(OptionalType* tipo);
+    void visit(ErrorType* tipo);
+    void visit(UnionType* tipo);
+    void visit(EnumType* tipo);
+
+
+    virtual void visit(Body* b);
+    virtual void visit(Programa* p);
+};
+
 
 
 #endif // VISITOR_H

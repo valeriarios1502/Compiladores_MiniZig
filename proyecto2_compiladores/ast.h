@@ -140,6 +140,10 @@ enum BinaryOp {
 
 class Exp {
 public:
+    bool isConstant = false ;
+  int constantValue = 0;
+  int label = 0;
+  bool ishoja = false;
     virtual Value accept(Visitor* visitor) = 0;
     virtual ~Exp() = 0;
     static string binopToChar(BinaryOp op);

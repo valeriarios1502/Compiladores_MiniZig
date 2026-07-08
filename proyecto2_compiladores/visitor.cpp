@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include "Typechecker.h"
 
+
 namespace {
     std::string escapeAsmString(const std::string& value) {
         std::ostringstream escaped;
@@ -74,23 +75,23 @@ void GenCodeVisitor::emitArrayElementCount(ArrayType* tipo) {
     if (tipo->exp1) {
         tipo->exp1->accept(this);
     } else {
-        out << "    movq $1, %rax\n";
+        out << "movq $1, %rax\n";
     }
 
     if (tipo->existe_exp2 && tipo->exp2) {
-        out << "    pushq %rax\n";
+        out << "pushq %rax\n";
         tipo->exp2->accept(this);
-        out << "    movq %rax, %rcx\n";
-        out << "    popq %rax\n";
-        out << "    imulq %rcx, %rax\n";
+        out << "movq %rax, %rcx\n";
+        out << "popq %rax\n";
+        out << "imulq %rcx, %rax\n";
     }
 
     if (auto innerArray = dynamic_cast<ArrayType*>(tipo->tipo)) {
-        out << "    pushq %rax\n";
+        out << "pushq %rax\n";
         emitArrayElementCount(innerArray);
-        out << "    movq %rax, %rcx\n";
-        out << "    popq %rax\n";
-        out << "    imulq %rcx, %rax\n";
+        out << "movq %rax, %rcx\n";
+        out << "popq %rax\n";
+        out << "imulq %rcx, %rax\n";
     }
 }
 
@@ -104,7 +105,7 @@ const char* GenCodeVisitor::argRegister(size_t index) const {
 }
 
 void GenCodeVisitor::emitCall(const std::string& nombre) {
-    out << "    call " << nombre << "\n";
+    out << "call " << nombre << "\n";
 }
 
 void GenCodeVisitor::emitStringData(const std::string& label, const std::string& value) {
@@ -132,19 +133,19 @@ void GenCodeVisitor::genAddress(Exp* lval) {
         } else {
             idx->nombre->accept(this);
         }
-        out << "  pushq %rax\n";
+        out << "pushq %rax\n";
         idx->dentroexp->accept(this);
-        out << "  movq %rax, %rcx\n";
-        out << "  popq %rax\n";
-        out << "  leaq (%rax,%rcx,8), %rax\n";
+        out << "movq %rax, %rcx\n";
+        out << "popq %rax\n";
+        out << "leaq (%rax,%rcx,8), %rax\n";
         return;
     } else if (auto idx = dynamic_cast<AlgoconcorchetesExp*>(lval)) {
         idx->nombre->accept(this);
-        out << "  pushq %rax\n";
+        out << "pushq %rax\n";
         idx->dentroexp->accept(this);
-        out << "  movq %rax, %rcx\n";
-        out << "  popq %rax\n";
-        out << "  leaq (%rax,%rcx,8), %rax\n";
+        out << "movq %rax, %rcx\n";
+        out << "popq %rax\n";
+        out << "leaq (%rax,%rcx,8), %rax\n";
     } else if (auto p = dynamic_cast<PuntoExp*>(lval)) {
         p->exp->accept(this);
         int off = 0;
@@ -386,11 +387,11 @@ void GenCodeVisitor::visit(Programa *program) {
     if (!hasMain) {
         out << "\n.globl main\n";
         out << "main:\n";
-        out << "    pushq %rbp\n";
-        out << "    movq %rsp, %rbp\n";
-        out << "    movq $0, %rax\n";
-        out << "    leave\n";
-        out << "    ret\n";
+        out << "pushq %rbp\n";
+        out << "movq %rsp, %rbp\n";
+        out << "movq $0, %rax\n";
+        out << "leave\n";
+        out << "ret\n";
     }
 
 #ifndef _WIN32
@@ -416,26 +417,26 @@ void GenCodeVisitor::visit(Template *t) {
 
     out << "\n.global " << nombreCompleto << "\n";
     out << nombreCompleto << ":\n";
-    out << "    pushq %rbp\n";
-    out << "    movq %rsp, %rbp\n";
+    out << "pushq %rbp\n";
+    out << "movq %rsp, %rbp\n";
 
     int bytes = alignStackBytes(funcontador[nombreCompleto] * 8 + 8);
     callScratchOffset = 0;
 
-    out << "    subq $" << bytes << ", %rsp\n";
+    out << "subq $" << bytes << ", %rsp\n";
 
     for (size_t i = 0; i < t->id_parametros.size() && i < maxRegisterArgs(); i++) {
         int slot = getLocalSlot(t->id_parametros[i]);
-        out << "    movq " << argRegister(i) << ", " << (-8 * slot) << "(%rbp)\n";
+        out << "movq " << argRegister(i) << ", " << (-8 * slot) << "(%rbp)\n";
     }
 
     if (t->block) t->block->accept(this);
 
     emitirDefers();
     out << "end_" << nombreCompleto << ":\n";
-    out << "    movq $0, %rax\n";
-    out << "    leave\n";
-    out << "    ret\n";
+    out << "movq $0, %rax\n";
+    out << "leave\n";
+    out << "ret\n";
 }
 
 void GenCodeVisitor::visit(ConstDec *c) {
@@ -543,9 +544,9 @@ void GenCodeVisitor::visit(VarDec *v) {
 
         if (v->exp != nullptr) {
             v->exp->accept(this);
-            out << "    movq %rax, " << offset << "(%rbp)\n"; 
+            out << "movq %rax, " << offset << "(%rbp)\n"; 
         } else {
-            out << "    movq $0, " << offset << "(%rbp)\n"; 
+            out << "movq $0, " << offset << "(%rbp)\n"; 
         }
     }
 }
@@ -568,26 +569,26 @@ void GenCodeVisitor::visit(Fundec* dec) {
 
     out << ".globl " << dec->nombre << "\n";
     out << dec->nombre << ":\n";
-    out << "    pushq %rbp\n";
-    out << "    movq %rsp, %rbp\n";
+    out << "pushq %rbp\n";
+    out << "movq %rsp, %rbp\n";
 
     int bytes = alignStackBytes(funcontador[dec->nombre] * 8 + 8);
     callScratchOffset = 0;
 
-    out << "    subq $" << bytes << ", %rsp\n";
+    out << "subq $" << bytes << ", %rsp\n";
 
     for (size_t i = 0; i < dec->id_parametros.size() && i < maxRegisterArgs(); i++) {
         int slot = getLocalSlot(dec->id_parametros[i]);
-        out << "    movq " << argRegister(i) << ", " << (-8 * slot) << "(%rbp)\n";
+        out << "movq " << argRegister(i) << ", " << (-8 * slot) << "(%rbp)\n";
     }
 
     if (dec->cuerpo) dec->cuerpo->accept(this);
 
     emitirDefers();
     out << "end_" << dec->nombre << ":" << endl;
-    out << "    movq $0, %rax\n"; 
-    out << "    leave\n";       
-    out << "    ret\n";
+    out << "movq $0, %rax\n"; 
+    out << "leave\n";       
+    out << "ret\n";
 }
 
 // -----------------------------------------------------------------------------
@@ -595,71 +596,77 @@ void GenCodeVisitor::visit(Fundec* dec) {
 // -----------------------------------------------------------------------------
 
 Value GenCodeVisitor::visit(BinaryExp *exp) {
+
+     if (exp->isConstant) {
+        out << "movq $" << exp->constantValue << ", %rax\n";
+        return Value::makeInt(0);   // <-- FALTA ESTO
+    }
+
     exp->left->accept(this);
-    out << "  pushq %rax\n";
+    out << "pushq %rax\n";
     exp->right->accept(this);
-    out << "  movq %rax, %rcx\n";
-    out << "  popq %rax\n";
+    out << "movq %rax, %rcx\n";
+    out << "popq %rax\n";
 
     switch (exp->op) {
-    case PLUS_OP:  out << "  addq %rcx, %rax\n";  break;
-    case MINUS_OP: out << "  subq %rcx, %rax\n";  break;
-    case MUL_OP:   out << "  imulq %rcx, %rax\n"; break;
+    case PLUS_OP:  out << "addq %rcx, %rax\n";  break;
+    case MINUS_OP: out << "subq %rcx, %rax\n";  break;
+    case MUL_OP:   out << "imulq %rcx, %rax\n"; break;
     case DIV_OP:
-            out << "    cqto\n";             
-            out << "    idivq %rcx\n";       
+            out << "cqto\n";             
+            out << "idivq %rcx\n";       
             break;
             
     case MODULO_OP:
-            out << "    cqto\n";
-            out << "    idivq %rcx\n";        
-            out << "    movq %rdx, %rax\n";   
+            out << "cqto\n";
+            out << "idivq %rcx\n";        
+            out << "movq %rdx, %rax\n";   
             break;
 
     case IGUALIGUAL:
-        out << "  cmpq %rcx, %rax\n";
-        out << "  movq $0, %rax\n";
-        out << "  sete %al\n";
-        out << "  movzbq %al, %rax\n";
+        out << "cmpq %rcx, %rax\n";
+        out << "movq $0, %rax\n";
+        out << "sete %al\n";
+        out << "movzbq %al, %rax\n";
         break;
 
     case DIFERENTE_OP:
-        out << "  cmpq %rcx, %rax\n";
-        out << "  movq $0, %rax\n";
-        out << "  setne %al\n";
-        out << "  movzbq %al, %rax\n";
+        out << "cmpq %rcx, %rax\n";
+        out << "movq $0, %rax\n";
+        out << "setne %al\n";
+        out << "movzbq %al, %rax\n";
         break;
 
     case MENOR:
-        out << "  cmpq %rcx, %rax\n";
-        out << "  movq $0, %rax\n";
-        out << "  setl %al\n";
-        out << "  movzbq %al, %rax\n";
+        out << "cmpq %rcx, %rax\n";
+        out << "movq $0, %rax\n";
+        out << "setl %al\n";
+        out << "movzbq %al, %rax\n";
         break;
 
     case MENORI:
-        out << "  cmpq %rcx, %rax\n";
-        out << "  movq $0, %rax\n";
-        out << "  setle %al\n";
-        out << "  movzbq %al, %rax\n";
+        out << "cmpq %rcx, %rax\n";
+        out << "movq $0, %rax\n";
+        out << "setle %al\n";
+        out << "movzbq %al, %rax\n";
         break;
 
     case MAYOR:
-        out << "  cmpq %rcx, %rax\n";
-        out << "  movq $0, %rax\n";
-        out << "  setg %al\n";
-        out << "  movzbq %al, %rax\n";
+        out << "cmpq %rcx, %rax\n";
+        out << "movq $0, %rax\n";
+        out << "setg %al\n";
+        out << "movzbq %al, %rax\n";
         break;
 
     case MAYORI:
-        out << "  cmpq %rcx, %rax\n";
-        out << "  movq $0, %rax\n";
-        out << "  setge %al\n";
-        out << "  movzbq %al, %rax\n";
+        out << "cmpq %rcx, %rax\n";
+        out << "movq $0, %rax\n";
+        out << "setge %al\n";
+        out << "movzbq %al, %rax\n";
         break;
 
-    case AND: out << "  andq %rcx, %rax\n"; break;
-    case OR:  out << "  orq %rcx, %rax\n";  break;
+    case AND: out << "andq %rcx, %rax\n"; break;
+    case OR:  out << "orq %rcx, %rax\n";  break;
 
     default:
         break;
@@ -668,7 +675,7 @@ Value GenCodeVisitor::visit(BinaryExp *exp) {
 }
 
 Value GenCodeVisitor::visit(NumberExpDecimal *exp) {
-    out << "  movq $" << exp->value << ", %rax\n";
+    out << "movq $" << exp->value << ", %rax\n";
     return Value::makeInt(0);
 }
 
@@ -680,13 +687,13 @@ Value GenCodeVisitor::visit(NumberExpFlotante *exp) {
 Value GenCodeVisitor::visit(StringExp *exp) {
     std::string strLabel = "str_" + std::to_string(labelcont++);
     emitStringData(strLabel, exp->valor);
-    out << "    leaq " << strLabel << "(%rip), %rax\n";
+    out << "leaq " << strLabel << "(%rip), %rax\n";
     return Value::makeInt(0);
 }
 
 Value GenCodeVisitor::visit(CharExp *exp) {
-    out << "    movq $0, %rax\n";
-    out << "    movb $" << (int)exp->valor << ", %al\n";
+    out << "movq $0, %rax\n";
+    out << "movb $" << (int)exp->valor << ", %al\n";
     return Value::makeInt(0);
 }
 
@@ -698,10 +705,10 @@ Value GenCodeVisitor::visit(IdExp *exp) {
 
     if (posicion.count(exp->value)) {
         int varOffset = posicion[exp->value];
-        out << "    movq " << (-8 * varOffset) << "(%rbp), %rax\n";
+        out << "movq " << (-8 * varOffset) << "(%rbp), %rax\n";
     } 
     else if (globales.count(exp->value)) {
-        out << "    movq " << globalNames[exp->value] << "(%rip), %rax\n";
+        out << "movq " << globalNames[exp->value] << "(%rip), %rax\n";
     } 
     else {
         std::cerr << "Error en compilación: Variable '" << exp->value << "' no declarada.\n";
@@ -721,27 +728,27 @@ Value GenCodeVisitor::visit(UnaryExp *exp) {
 
     switch (exp->op) {
         case UnaryExp::NOT_OP: 
-            out << "    cmpq $0, %rax\n";
-            out << "    movq $0, %rax\n";
-            out << "    sete %al\n";
-            out << "    movzbq %al, %rax\n";
+            out << "cmpq $0, %rax\n";
+            out << "movq $0, %rax\n";
+            out << "sete %al\n";
+            out << "movzbq %al, %rax\n";
             break;
 
         case UnaryExp::NEGATE: 
-            out << "    negq %rax\n";
+            out << "negq %rax\n";
             break;
 
         case UnaryExp::DEREF: 
-            out << "    movq (%rax), %rax\n"; 
+            out << "movq (%rax), %rax\n"; 
             break;
 
         case UnaryExp::ADDRESS: 
             IdExp* id = dynamic_cast<IdExp*>(exp->exp);
             if (id != nullptr) {
                 if (posicion.count(id->value)) {
-                    out << "    leaq " << (-8 * posicion[id->value]) << "(%rbp), %rax\n";
+                    out << "leaq " << (-8 * posicion[id->value]) << "(%rbp), %rax\n";
                 } else if (globales.count(id->value)) {
-                    out << "    leaq " << globalNames[id->value] << "(%rip), %rax\n";
+                    out << "leaq " << globalNames[id->value] << "(%rip), %rax\n";
                 }
             }
             break;
@@ -754,8 +761,8 @@ Value GenCodeVisitor::visit(NewExp *e) {
 
     if (auto arrayType = dynamic_cast<ArrayType*>(e->tipo)) {
         emitArrayElementCount(arrayType);
-        out << "    imulq $" << elementSizeBytes(arrayType->tipo) << ", %rax\n";
-        out << "    movq %rax, " << argRegister(0) << "\n";
+        out << "imulq $" << elementSizeBytes(arrayType->tipo) << ", %rax\n";
+        out << "movq %rax, " << argRegister(0) << "\n";
         emitCall("malloc");
         return Value::makeInt(0);
     }
@@ -770,18 +777,18 @@ Value GenCodeVisitor::visit(NewExp *e) {
         int numeroCampos = structFields[this->lastTypeName];
         tamanoBytes = numeroCampos * 8;
     }
-    out << "    movq $" << tamanoBytes << ", " << argRegister(0) << "\n";
+    out << "movq $" << tamanoBytes << ", " << argRegister(0) << "\n";
     emitCall("malloc");
     return Value::makeInt(0);
 }
 
 Value GenCodeVisitor::visit(NullExp *e) {
-    out << "    movq $0, %rax\n";
+    out << "movq $0, %rax\n";
     return Value::makeInt(0);
 }
 
 Value GenCodeVisitor::visit(UndefinedExp *e) {
-    out << "    movq $0, %rax\n";
+    out << "movq $0, %rax\n";
     return Value::makeInt(0);
 }
 
@@ -827,7 +834,7 @@ Value GenCodeVisitor::visit(AlgoconcorchetesylistaExp* exp) {
 
 Value GenCodeVisitor::visit(PuntoExp *e) {
     e->exp->accept(this);
-    out << "    movq %rax, %r10\n";
+    out << "movq %rax, %r10\n";
 
     int offsetCampo = 0;
     std::string baseType = lastTypeName;
@@ -842,7 +849,7 @@ Value GenCodeVisitor::visit(PuntoExp *e) {
         if (it != campos.end()) offsetCampo = it->second;
     }
 
-    out << "    movq " << offsetCampo << "(%r10), %rax\n";
+    out << "movq " << offsetCampo << "(%r10), %rax\n";
     return Value::makeInt(0);
 }
 
@@ -863,14 +870,14 @@ Value GenCodeVisitor::visit(FcallExp *e) {
     for (size_t i = n; i > 0; i--) {
         if (e->argumentos[i - 1] != nullptr) {
             e->argumentos[i - 1]->accept(this);
-            out << "    pushq %rax\n";
+            out << "pushq %rax\n";
         } else {
-            out << "    pushq $0\n";
+            out << "pushq $0\n";
         }
     }
 
     for (size_t i = 0; i < n; i++) {
-        out << "    popq " << argRegister(i) << "\n";
+        out << "popq " << argRegister(i) << "\n";
     }
     emitCall(e->nombre);
     return Value::makeInt(0);
@@ -882,12 +889,12 @@ Value GenCodeVisitor::visit(LambdaExp *e) {
     std::string nombreLambda = "lambda_func_" + std::to_string(lbl);
     std::string labelLambdaSkip = "lambda_skip_" + std::to_string(lbl);
 
-    out << "    jmp " << labelLambdaSkip << "\n";
+    out << "jmp " << labelLambdaSkip << "\n";
 
     out << ".globl " << nombreLambda << "\n";
     out << nombreLambda << ":\n";
-    out << "    pushq %rbp\n";
-    out << "    movq %rsp, %rbp\n";
+    out << "pushq %rbp\n";
+    out << "movq %rsp, %rbp\n";
 
     std::string funcionPadre = funcionActual;
     int scratchPadre = callScratchOffset;
@@ -903,21 +910,21 @@ Value GenCodeVisitor::visit(LambdaExp *e) {
     int bytes = alignStackBytes(funcontador[nombreLambda] * 8 + 8);
     callScratchOffset = bytes;
 
-    out << "    subq $" << bytes << ", %rsp\n";
+    out << "subq $" << bytes << ", %rsp\n";
 
     if (e->hayparametros) {
         for (size_t i = 0; i < e->id_parametros.size() && i < maxRegisterArgs(); i++) {
             int slot = getLocalSlot(e->id_parametros[i]);
-            out << "    movq " << argRegister(i) << ", " << (-8 * slot) << "(%rbp)\n";
+            out << "movq " << argRegister(i) << ", " << (-8 * slot) << "(%rbp)\n";
         }
     }
 
     if (e->cuerpo) e->cuerpo->accept(this);
 
     out << "end_" << nombreLambda << ":\n";
-    out << "    movq $0, %rax\n"; 
-    out << "    leave\n";       
-    out << "    ret\n";
+    out << "movq $0, %rax\n"; 
+    out << "leave\n";       
+    out << "ret\n";
 
     out << labelLambdaSkip << ":\n";
 
@@ -930,10 +937,10 @@ Value GenCodeVisitor::visit(LambdaExp *e) {
 
 Value GenCodeVisitor::visit(NotExp *exp) {
     if (exp->exp) exp->exp->accept(this);
-    out << "    cmpq $0, %rax\n";
-    out << "    movq $0, %rax\n";
-    out << "    sete %al\n";
-    out << "    movzbq %al, %rax\n";
+    out << "cmpq $0, %rax\n";
+    out << "movq $0, %rax\n";
+    out << "sete %al\n";
+    out << "movzbq %al, %rax\n";
     return Value::makeInt(0);
 }
 
@@ -944,7 +951,7 @@ Value GenCodeVisitor::visit(NotExp *exp) {
 void GenCodeVisitor::visit(IfStmt *stm) {
     int lbl = labelcont++;
     stm->condicion->accept(this);
-    out << "  cmpq $0, %rax\n";
+    out << " cmpq $0, %rax\n";
     out << "  je else_" << lbl << "\n";
     stm->cuerpodelif->accept(this);
     out << "  jmp endif_" << lbl << "\n";
@@ -1046,7 +1053,10 @@ void GenCodeVisitor::visit(ReturnStm* stm) {
     if (stm->exp) stm->exp->accept(this);
     else out << "movq $0, %rax" << endl;
 
+    out << "pushq %rax\n";
     emitirDefers();
+    out << "popq %rax\n";
+
     out << "leave" << endl;
     out << "ret" << endl;
 }
@@ -1172,11 +1182,11 @@ void GenCodeVisitor::visit(ForStmt* stm) {
 //Este si no tengo ni idea d dnd esta en la gramatica
 void GenCodeVisitor::visit(DerefAssignStmt* stm) {
     stm->rval->accept(this);
-    out << "  pushq %rax\n";
+    out << "pushq %rax\n";
     genAddress(stm->lval);
-    out << "  movq %rax, %rcx\n";
-    out << "  popq %rax\n";
-    out << "  movq %rax, (%rcx)\n";
+    out << "movq %rax, %rcx\n";
+    out << "popq %rax\n";
+    out << "movq %rax, (%rcx)\n";
 }
 
 // -----------------------------------------------------------------------------
@@ -1211,4 +1221,532 @@ void GenCodeVisitor::visit(UnionType* tipo) {
 
 void GenCodeVisitor::visit(EnumType* tipo) {
     lastTypeName = tipo->nombre;
+}
+
+Value Op1Visitor::Opt1(Programa *program){
+    program->accept(this);
+    return Value::makeInt(0); 
+
+}
+Value Op1Visitor::visit(BinaryExp* exp){
+    exp->left->accept(this);
+    exp->right->accept(this);
+    exp->isConstant = exp->left->isConstant && exp->right->isConstant;
+    if (exp->isConstant){
+       switch (exp->op) {
+      case PLUS_OP:
+       exp->constantValue = exp->left->constantValue + exp->right->constantValue;
+       break;
+      case MINUS_OP:
+       exp->constantValue = exp->left->constantValue - exp->right->constantValue;
+       break;
+      case MUL_OP:
+       exp->constantValue = exp->left->constantValue * exp->right->constantValue;
+       break;
+      case MODULO_OP:
+       exp->constantValue = exp->left->constantValue % exp->right->constantValue;
+       break;
+      case DIV_OP:
+         exp->constantValue = exp->left->constantValue / exp->right->constantValue;
+         break;
+      case IGUALIGUAL:
+       exp->constantValue = exp->left->constantValue == exp->right->constantValue ? 1 : 0;
+       break;
+      case DIFERENTE_OP:
+       exp->constantValue = exp->left->constantValue != exp->right->constantValue ? 1 : 0;
+       break;
+      case MENOR:
+       exp->constantValue = exp->left->constantValue < exp->right->constantValue ? 1 : 0;
+       break;
+      case MENORI:
+       exp->constantValue = exp->left->constantValue <= exp->right->constantValue ? 1 : 0;
+       break;
+      case MAYOR:
+       exp->constantValue = exp->left->constantValue > exp->right->constantValue ? 1 : 0;
+       break;
+      case MAYORI:
+       exp->constantValue = exp->left->constantValue >= exp->right->constantValue ? 1 : 0;
+       break;
+      case AND:
+       exp->constantValue = exp->left->constantValue && exp->right->constantValue ? 1 : 0;
+       break;
+      case OR:
+       exp->constantValue = exp->left->constantValue || exp->right->constantValue ? 1 : 0;
+       break;
+      }
+    }
+  return Value::makeInt(0);
+}
+
+
+
+
+
+Value Op1Visitor::visit(NumberExpDecimal* exp){
+    exp->isConstant=true;
+    exp->constantValue= exp->value;
+    return Value::makeInt(exp->constantValue);
+}
+Value Op1Visitor::visit(NumberExpFlotante* exp){
+    exp->isConstant=true;
+    exp->constantValue= exp->value;
+    return Value::makeFloat(exp->constantValue);
+}
+Value Op1Visitor::visit(StringExp* exp){
+    exp->isConstant=true;
+    return Value::makeString(exp->valor);
+}
+Value Op1Visitor::visit(CharExp* exp){
+    exp->isConstant=true;
+    return Value::makeChar(exp->valor);
+}
+
+Value Op1Visitor::visit(IdExp* exp){
+    exp->isConstant = false;
+    return Value::makeInt(0);
+}
+
+Value Op1Visitor::visit(BoolExp* exp){
+    exp->isConstant=true;
+    exp->constantValue= exp->booleano == "true" ? 1 : 0;
+    return Value::makeInt(exp->constantValue);
+}
+
+Value Op1Visitor::visit(FcallExp* exp){
+     for (auto arg : exp->argumentos)
+        arg->accept(this);
+    exp->isConstant = false;
+
+    return Value::makeInt(0);
+}
+Value Op1Visitor::visit(UnaryExp* exp){
+    exp->exp->accept(this);
+    exp->isConstant = exp->exp->isConstant;
+    if (exp->isConstant){
+        switch (exp->op) {
+        case UnaryExp::NEGATE:
+            exp->constantValue = -exp->exp->constantValue;
+            break;
+        case UnaryExp::NOT_OP:
+            exp->constantValue = !exp->exp->constantValue;
+            break;
+        default:
+            break;
+    }
+}
+
+return Value::makeInt(0);
+}
+
+
+Value Op1Visitor::visit(NewExp* exp){
+    exp->isConstant = false;
+    return Value::makeInt(0);
+}
+
+Value Op1Visitor::visit(NullExp* exp){
+    exp->isConstant = false;
+    return Value::makeInt(0);
+}
+
+Value Op1Visitor::visit(UndefinedExp* exp){
+    exp->isConstant = false;
+    return Value::makeInt(0);
+}
+
+Value Op1Visitor::visit(ReferenceExp* exp){
+    exp->isConstant = false;
+    return Value::makeInt(0);
+}
+
+Value Op1Visitor::visit(PunteroExp* exp){
+    exp->isConstant = false;
+    return Value::makeInt(0);
+}
+
+Value Op1Visitor::visit(AlgoconcorchetesylistaExp* exp){
+    exp->isConstant = false;
+    return Value::makeInt(0);
+}
+
+Value Op1Visitor::visit(AlgoconcorchetesExp* exp){
+    exp->isConstant = false;
+    return Value::makeInt(0);
+}
+
+Value Op1Visitor::visit(PuntoExp* exp){
+    exp->isConstant = false;
+    return Value::makeInt(0);
+}
+
+Value Op1Visitor::visit(LambdaExp* exp){
+    exp->isConstant = false;
+    return Value::makeInt(0);
+}
+
+Value Op1Visitor::visit(NotExp* exp){
+    exp->isConstant = false;  
+    return Value::makeInt(0);
+}
+
+void Op1Visitor::visit(IfStmt* stm){
+    stm->condicion->accept(this);
+}
+void Op1Visitor::visit(WhileStmt* stm){
+    stm->condicion->accept(this);
+}
+void Op1Visitor::visit(BodyStmt* stm){
+}
+void Op1Visitor::visit(AsignStmt* stm){
+    stm->exp->accept(this);
+}
+void Op1Visitor::visit(PrintStmt* stm){
+    stm->exp->accept(this);
+}
+
+void Op1Visitor::visit(ReturnStm* stm){
+    if( stm->exp != nullptr) {
+        stm->exp->accept(this);
+    }
+}
+
+void Op1Visitor::visit(DeleteStm* stm){
+    stm->exp->accept(this);
+}
+
+void Op1Visitor::visit(ContinueStm* stm){
+
+}
+void Op1Visitor::visit(BreakStmt* stm){
+    if(stm->valor != nullptr) {
+        stm->valor->accept(this);
+    }
+}
+
+void Op1Visitor::visit(SwitchStmt* stm){
+    stm->condicion->accept(this);
+}
+void Op1Visitor::visit(TryStmt* stm){
+    if( stm->expr != nullptr) {
+        stm->expr->accept(this);
+    }
+}
+void Op1Visitor::visit(DeferStmt* stm){
+    stm->stmt->accept(this);
+}
+void Op1Visitor::visit(ForStmt* stm){
+    if( stm->condicion != nullptr) {
+        stm->condicion->accept(this);
+    }
+    if( stm->incremento != nullptr) {
+        stm->incremento->accept(this);
+    }
+}
+void Op1Visitor::visit(DerefAssignStmt* e){
+    e->lval->accept(this);
+    e->rval->accept(this);
+}
+
+
+void Op1Visitor::visit(Fundec* fd){
+
+    if(fd->cuerpo != nullptr){
+       fd->cuerpo->accept(this);
+    }
+}
+void Op1Visitor::visit(Structdec* sd){
+
+}
+void Op1Visitor::visit(VarDec* vd){
+    if(vd->exp != nullptr){
+        vd->exp->accept(this);
+    }
+}
+void Op1Visitor::visit(ConstDec* cd){
+    if(cd->exp != nullptr){
+        cd->exp->accept(this);
+    }
+}
+void Op1Visitor::visit(Template* t){
+
+}
+
+void Op1Visitor::visit(IdType* tipo){}
+void Op1Visitor::visit(PointerType* tipo){}
+void Op1Visitor::visit(ArrayType* tipo){}
+void Op1Visitor::visit(OptionalType* tipo){}
+void Op1Visitor::visit(ErrorType* tipo){}
+void Op1Visitor::visit(UnionType* tipo){}
+void Op1Visitor::visit(EnumType* tipo){}
+
+
+void Op1Visitor::visit(Body* b){
+    for(auto s : b->slist) {
+        s->accept(this);
+    }
+}
+
+void Op1Visitor::visit(Programa* p){
+    for(auto d : p->declist) {
+        d->accept(this);
+    }
+}
+
+
+// Sethi-Ullman
+
+Value Op2Visitor::Opt2(Programa *program){
+    program->accept(this);
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(BinaryExp* exp){
+    exp->left->accept(this);
+    exp->right->accept(this);
+
+    // Optimización: hoja constante como operando derecho puede
+    // codificarse como inmediato -> no consume registro.
+    // Como operando izquierdo sí necesita cargarse antes.
+    if (exp->left->ishoja && exp->left->isConstant)
+        exp->left->label = 1;
+    if (exp->right->ishoja && exp->right->isConstant)
+        exp->right->label = 0;
+
+    if (exp->left->label == exp->right->label)
+        exp->label = exp->left->label + 1;
+    else
+        exp->label = std::max(exp->left->label, exp->right->label);
+
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(NumberExpDecimal* exp){
+    exp->ishoja = true;
+    exp->label = 1;   // FIX: toda hoja necesita al menos 1 registro
+    return Value::makeInt(0);
+}
+Value Op2Visitor::visit(NumberExpFlotante* exp){
+    exp->ishoja = true;
+    exp->label = 1;   // FIX
+    return Value::makeInt(0);
+}
+Value Op2Visitor::visit(StringExp* exp){
+    exp->ishoja = true;
+    exp->label = 1;   // FIX
+    return Value::makeInt(0);
+}
+Value Op2Visitor::visit(CharExp* exp){
+    exp->ishoja = true;
+    exp->label = 1;   // FIX
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(IdExp* exp){
+    exp->ishoja = false;
+    exp->label = 1;
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(BoolExp* exp){
+    exp->ishoja = true;
+    exp->label = 1;   // FIX
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(FcallExp* exp){
+    int maxArgLabel = 0;
+    for (auto arg : exp->argumentos) {
+        arg->accept(this);
+        maxArgLabel = std::max(maxArgLabel, arg->label);  // FIX: usar el resultado real
+    }
+    exp->ishoja = false;
+    // Una llamada necesita al menos tantos registros como su argumento
+    // más exigente, con un mínimo razonable para el propio call.
+    exp->label = std::max(maxArgLabel, 1);
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(UnaryExp* exp){
+    exp->exp->accept(this);
+    exp->ishoja = false;
+    exp->label = std::max(1, exp->exp->label);  // FIX: piso de 1 registro
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(NewExp* exp){
+    exp->ishoja = false;
+    exp->label = 1;   // FIX: resultado de malloc ocupa un registro
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(NullExp* exp){
+    exp->ishoja = true;   // es un literal
+    exp->label = 1;       // FIX
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(UndefinedExp* exp){
+    exp->ishoja = true;
+    exp->label = 1;   // FIX
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(ReferenceExp* exp){
+    if (exp->exp) exp->exp->accept(this);   // FIX: faltaba recorrer
+    exp->ishoja = false;
+    exp->label = 1;   // FIX: leaq siempre cabe en 1 registro
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(PunteroExp* exp){
+    exp->exp->accept(this);   // FIX: faltaba recorrer
+    exp->ishoja = false;
+    exp->label = std::max(1, exp->exp->label);   // FIX
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(AlgoconcorchetesylistaExp* exp){
+    int maxLabel = 0;
+    for (auto arg : exp->argumentos) {   // FIX: faltaba recorrer
+        arg->accept(this);
+        maxLabel = std::max(maxLabel, arg->label);
+    }
+    exp->ishoja = false;
+    exp->label = std::max(1, maxLabel);   // FIX
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(AlgoconcorchetesExp* exp){
+    exp->nombre->accept(this);      // FIX: faltaba recorrer
+    exp->dentroexp->accept(this);   // FIX: faltaba recorrer
+    exp->ishoja = false;
+
+    // misma fórmula que BinaryExp: base + índice
+    if (exp->nombre->label == exp->dentroexp->label)
+        exp->label = exp->nombre->label + 1;
+    else
+        exp->label = std::max(exp->nombre->label, exp->dentroexp->label);
+
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(PuntoExp* exp){
+    exp->exp->accept(this);   // FIX: faltaba recorrer
+    exp->ishoja = false;
+    exp->label = std::max(1, exp->exp->label);   // FIX
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(LambdaExp* exp){
+    if (exp->cuerpo) exp->cuerpo->accept(this);   // FIX: faltaba recorrer
+    exp->ishoja = false;
+    exp->label = 1;   // FIX: leaq a la función siempre 1 registro
+    return Value::makeInt(0);
+}
+
+Value Op2Visitor::visit(NotExp* exp){
+    if (exp->exp) exp->exp->accept(this);   // FIX: faltaba recorrer
+    exp->ishoja = false;
+    exp->label = std::max(1, exp->exp ? exp->exp->label : 1);   // FIX
+    return Value::makeInt(0);
+}
+
+void Op2Visitor::visit(IfStmt* stm){
+    stm->condicion->accept(this);
+}
+void Op2Visitor::visit(WhileStmt* stm){
+    stm->condicion->accept(this);
+}
+void Op2Visitor::visit(BodyStmt* stm){
+}
+void Op2Visitor::visit(AsignStmt* stm){
+    stm->exp->accept(this);
+}
+void Op2Visitor::visit(PrintStmt* stm){
+    stm->exp->accept(this);
+}
+
+void Op2Visitor::visit(ReturnStm* stm){
+    if (stm->exp != nullptr) {
+        stm->exp->accept(this);
+    }
+}
+
+void Op2Visitor::visit(DeleteStm* stm){
+    stm->exp->accept(this);
+}
+
+void Op2Visitor::visit(ContinueStm* stm){
+
+}
+void Op2Visitor::visit(BreakStmt* stm){
+    if (stm->valor != nullptr) {
+        stm->valor->accept(this);
+    }
+}
+
+void Op2Visitor::visit(SwitchStmt* stm){
+    stm->condicion->accept(this);
+}
+void Op2Visitor::visit(TryStmt* stm){
+    if (stm->expr != nullptr) {
+        stm->expr->accept(this);
+    }
+}
+void Op2Visitor::visit(DeferStmt* stm){
+    stm->stmt->accept(this);
+}
+void Op2Visitor::visit(ForStmt* stm){
+    if (stm->condicion != nullptr) {
+        stm->condicion->accept(this);
+    }
+    if (stm->incremento != nullptr) {
+        stm->incremento->accept(this);
+    }
+}
+void Op2Visitor::visit(DerefAssignStmt* e){
+    e->lval->accept(this);
+    e->rval->accept(this);
+}
+
+void Op2Visitor::visit(Fundec* fd){
+    if (fd->cuerpo != nullptr){
+        fd->cuerpo->accept(this);
+    }
+}
+void Op2Visitor::visit(Structdec* sd){
+
+}
+void Op2Visitor::visit(VarDec* vd){
+    if (vd->exp != nullptr){
+        vd->exp->accept(this);
+    }
+}
+void Op2Visitor::visit(ConstDec* cd){
+    if (cd->exp != nullptr){
+        cd->exp->accept(this);
+    }
+}
+void Op2Visitor::visit(Template* t){
+
+}
+
+void Op2Visitor::visit(IdType* tipo){}
+void Op2Visitor::visit(PointerType* tipo){}
+void Op2Visitor::visit(ArrayType* tipo){}
+void Op2Visitor::visit(OptionalType* tipo){}
+void Op2Visitor::visit(ErrorType* tipo){}
+void Op2Visitor::visit(UnionType* tipo){}
+void Op2Visitor::visit(EnumType* tipo){}
+
+void Op2Visitor::visit(Body* b){
+    for (auto s : b->slist) {
+        s->accept(this);
+    }
+}
+
+void Op2Visitor::visit(Programa* p){
+    for (auto d : p->declist) {
+        d->accept(this);
+    }
 }
