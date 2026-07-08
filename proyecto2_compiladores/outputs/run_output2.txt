@@ -3,3 +3,5 @@ Parseo exitoso
 Codigo x86 generado en: inputs/input2.s
 
 === EJECUCION DEL PROGRAMA ===
+No ejecutado: el assembly no compilo
+

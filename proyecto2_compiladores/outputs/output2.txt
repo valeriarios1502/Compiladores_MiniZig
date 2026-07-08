@@ -8,7 +8,7 @@ print_char_fmt: .string "%c\n"
 main:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $24, %rsp
 movq $24, %rdi
 call malloc
 movq %rax, -8(%rbp)
@@ -113,3 +113,5 @@ end_main:
 movq $0, %rax
 leave
 ret
+
+.section .note.GNU-stack,"",@progbits

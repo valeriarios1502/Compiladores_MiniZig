@@ -8,7 +8,7 @@ print_char_fmt: .string "%c\n"
 factorial:
 pushq %rbp
 movq %rsp, %rbp
-subq $16, %rsp
+subq $8, %rsp
 movq %rdi, -8(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
@@ -55,7 +55,7 @@ ret
 fibonacci:
 pushq %rbp
 movq %rsp, %rbp
-subq $16, %rsp
+subq $8, %rsp
 movq %rdi, -8(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
@@ -110,7 +110,7 @@ ret
 area:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $16, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq -8(%rbp), %rax
@@ -131,7 +131,7 @@ ret
 maximo:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $16, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq -8(%rbp), %rax
@@ -166,7 +166,7 @@ ret
 minimo:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $16, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq -8(%rbp), %rax
@@ -201,7 +201,7 @@ ret
 abs:
 pushq %rbp
 movq %rsp, %rbp
-subq $16, %rsp
+subq $8, %rsp
 movq %rdi, -8(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
@@ -236,7 +236,7 @@ ret
 main:
 pushq %rbp
 movq %rsp, %rbp
-subq $112, %rsp
+subq $96, %rsp
 movq $5, %rax
 pushq %rax
 popq %rdi
@@ -570,3 +570,5 @@ end_main:
 movq $0, %rax
 leave
 ret
+
+.section .note.GNU-stack,"",@progbits

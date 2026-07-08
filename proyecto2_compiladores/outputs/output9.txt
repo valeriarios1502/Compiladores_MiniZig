@@ -14,7 +14,7 @@ LIMITE:
 clamp:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $24, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq %rdx, -24(%rbp)
@@ -69,7 +69,7 @@ ret
 buscarEn:
 pushq %rbp
 movq %rsp, %rbp
-subq $48, %rsp
+subq $40, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq %rdx, -24(%rbp)
@@ -137,7 +137,7 @@ ret
 main:
 pushq %rbp
 movq %rsp, %rbp
-subq $80, %rsp
+subq $64, %rsp
     movq $40, %rdi
 call malloc
 movq %rax, -8(%rbp)
@@ -349,3 +349,5 @@ end_main:
 movq $0, %rax
 leave
 ret
+
+.section .note.GNU-stack,"",@progbits

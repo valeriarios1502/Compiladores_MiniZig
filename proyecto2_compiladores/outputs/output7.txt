@@ -8,7 +8,7 @@ print_char_fmt: .string "%c\n"
 clasifica:
 pushq %rbp
 movq %rsp, %rbp
-subq $16, %rsp
+subq $8, %rsp
 movq %rdi, -8(%rbp)
 movq -8(%rbp), %rax
   movq %rax, %r10
@@ -70,7 +70,7 @@ ret
 diasemana:
 pushq %rbp
 movq %rsp, %rbp
-subq $16, %rsp
+subq $8, %rsp
 movq %rdi, -8(%rbp)
 movq -8(%rbp), %rax
   movq %rax, %r10
@@ -158,7 +158,7 @@ ret
 main:
 pushq %rbp
 movq %rsp, %rbp
-subq $16, %rsp
+subq $8, %rsp
 movq $1, %rax
 pushq %rax
 popq %rdi
@@ -201,3 +201,5 @@ end_main:
 movq $0, %rax
 leave
 ret
+
+.section .note.GNU-stack,"",@progbits

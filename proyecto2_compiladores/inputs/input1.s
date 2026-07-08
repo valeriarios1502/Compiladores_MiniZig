@@ -56,7 +56,7 @@ MAX:
 main:
 pushq %rbp
 movq %rsp, %rbp
-subq $16, %rsp
+subq $8, %rsp
 movq $12, %rax
 movq %rax, -8(%rbp)
 movq g_x(%rip), %rax
@@ -98,3 +98,5 @@ end_main:
 movq $0, %rax
 leave
 ret
+
+.section .note.GNU-stack,"",@progbits

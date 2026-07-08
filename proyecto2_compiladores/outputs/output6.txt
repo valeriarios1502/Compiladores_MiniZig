@@ -8,7 +8,7 @@ print_char_fmt: .string "%c\n"
 sumar:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $16, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq -8(%rbp), %rax
@@ -29,7 +29,7 @@ ret
 exprs:
 pushq %rbp
 movq %rsp, %rbp
-subq $96, %rsp
+subq $88, %rsp
 movq $5, %rax
 movq %rax, -8(%rbp)
 movq -8(%rbp), %rax
@@ -217,9 +217,11 @@ ret
 main:
 pushq %rbp
 movq %rsp, %rbp
-subq $16, %rsp
+subq $0, %rsp
 call exprs
 end_main:
 movq $0, %rax
 leave
 ret
+
+.section .note.GNU-stack,"",@progbits

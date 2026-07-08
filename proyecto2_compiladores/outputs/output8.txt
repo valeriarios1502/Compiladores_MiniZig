@@ -4,27 +4,11 @@ print_str_fmt: .string "%s\n"
 print_char_fmt: .string "%c\n"
 
 .text
-.globl __comptime__
-__comptime__:
-pushq %rbp
-movq %rsp, %rbp
-subq $16, %rsp
-movq $100, %rax
-movq %rax, -8(%rbp)
-movq -8(%rbp), %rax
-movq %rax, %rsi
-leaq print_int_fmt(%rip), %rdi
-movl $0, %eax
-call printf
-end___comptime__:
-movq $0, %rax
-leave
-ret
 .globl doble
 doble:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $16, %rsp
 movq %rdi, -8(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
@@ -46,7 +30,7 @@ ret
 triple:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $16, %rsp
 movq %rdi, -8(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
@@ -68,7 +52,7 @@ ret
 potencia:
 pushq %rbp
 movq %rsp, %rbp
-subq $48, %rsp
+subq $32, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq $1, %rax
@@ -116,7 +100,7 @@ ret
 main:
 pushq %rbp
 movq %rsp, %rbp
-subq $48, %rsp
+subq $32, %rsp
 movq $5, %rax
 pushq %rax
 popq %rdi
@@ -167,3 +151,5 @@ end_main:
 movq $0, %rax
 leave
 ret
+
+.section .note.GNU-stack,"",@progbits

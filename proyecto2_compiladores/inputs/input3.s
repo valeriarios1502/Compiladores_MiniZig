@@ -8,7 +8,7 @@ print_char_fmt: .string "%c\n"
 saludar:
 pushq %rbp
 movq %rsp, %rbp
-subq $16, %rsp
+subq $0, %rsp
 .data
 str_0: .string "hola"
 .text
@@ -25,7 +25,7 @@ ret
 sumar:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $16, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq -8(%rbp), %rax
@@ -46,7 +46,7 @@ ret
 buscar:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $24, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq $0, %rax
@@ -85,7 +85,7 @@ ret
 main:
 pushq %rbp
 movq %rsp, %rbp
-subq $48, %rsp
+subq $40, %rsp
 call saludar
 movq $4, %rax
 pushq %rax
@@ -212,3 +212,5 @@ end_main:
 movq $0, %rax
 leave
 ret
+
+.section .note.GNU-stack,"",@progbits

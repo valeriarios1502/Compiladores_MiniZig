@@ -9,7 +9,7 @@ print_char_fmt: .string "%c\n"
 maximo:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $16, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq -8(%rbp), %rax
@@ -45,7 +45,7 @@ ret
 swap:
 pushq %rbp
 movq %rsp, %rbp
-subq $32, %rsp
+subq $24, %rsp
 movq %rdi, -8(%rbp)
 movq %rsi, -16(%rbp)
 movq -8(%rbp), %rax
@@ -72,7 +72,7 @@ ret
 main:
 pushq %rbp
 movq %rsp, %rbp
-subq $64, %rsp
+subq $56, %rsp
 movq $7, %rax
 pushq %rax
 movq $3, %rax
@@ -158,3 +158,5 @@ end_main:
 movq $0, %rax
 leave
 ret
+
+.section .note.GNU-stack,"",@progbits

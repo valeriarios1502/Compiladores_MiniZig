@@ -87,11 +87,6 @@ Programa* Parser::parseP() {
         } else if (check(Token::COMPTIME)) {
             match(Token::COMPTIME);
             Body* b = parseBody();
-            Fundec* f = new Fundec();
-            f->nombre = "__comptime__";
-            f->tipo = new IdType("void");
-            f->cuerpo = b;
-            p->declist.push_back(f);
         } else {
             throw runtime_error("Error sintáctico: declaración inesperada");
         }

@@ -8,7 +8,7 @@ print_char_fmt: .string "%c\n"
 control:
 pushq %rbp
 movq %rsp, %rbp
-subq $64, %rsp
+subq $48, %rsp
 movq $0, %rax
 movq %rax, -8(%rbp)
 movq -8(%rbp), %rax
@@ -216,9 +216,11 @@ ret
 main:
 pushq %rbp
 movq %rsp, %rbp
-subq $16, %rsp
+subq $0, %rsp
 call control
 end_main:
 movq $0, %rax
 leave
 ret
+
+.section .note.GNU-stack,"",@progbits
