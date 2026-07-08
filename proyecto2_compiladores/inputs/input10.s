@@ -341,15 +341,14 @@ popq %rax
 movq %rax, (%rcx)
 movq -48(%rbp), %rax
 movq %rax, %r10
-movq 24(%r10), %rax
+movq 16(%r10), %rax
 pushq %rax
 movq -48(%rbp), %rax
 movq %rax, %r10
-movq 16(%r10), %rax
-pushq %rax
-popq %rdi
-popq %rsi
-call area
+movq 24(%r10), %rax
+movq %rax, %rcx
+popq %rax
+imulq %rcx, %rax
 movq %rax, -56(%rbp)
 movq -56(%rbp), %rax
 movq %rax, %rsi
@@ -584,5 +583,3 @@ end_main:
 movq $0, %rax
 leave
 ret
-
-.section .note.GNU-stack,"",@progbits

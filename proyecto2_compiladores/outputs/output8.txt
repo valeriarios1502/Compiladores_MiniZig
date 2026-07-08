@@ -167,5 +167,3 @@ end_main:
 movq $0, %rax
 leave
 ret
-
-.section .note.GNU-stack,"",@progbits

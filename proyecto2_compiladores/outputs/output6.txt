@@ -202,13 +202,12 @@ movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
 call printf
-movq $1, %rax
-pushq %rax
 movq -8(%rbp), %rax
 pushq %rax
-popq %rdi
-popq %rsi
-call sumar
+movq $1, %rax
+movq %rax, %rcx
+popq %rax
+addq %rcx, %rax
 movq %rax, -88(%rbp)
 movq -88(%rbp), %rax
 movq %rax, %rsi
@@ -229,5 +228,3 @@ end_main:
 movq $0, %rax
 leave
 ret
-
-.section .note.GNU-stack,"",@progbits

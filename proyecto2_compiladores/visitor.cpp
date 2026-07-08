@@ -45,6 +45,425 @@ namespace {
         std::string normalized = stripPointerType(typeName);
         return normalized == "char";
     }
+
+    struct InlineContext {
+        std::unordered_map<std::string, Fundec*> functions;
+        std::unordered_set<std::string> inliningStack;
+    };
+
+    bool isIntegerLiteral(const Exp* expr, int& value) {
+        if (const auto* number = dynamic_cast<const NumberExpDecimal*>(expr)) {
+            value = number->value;
+            return true;
+        }
+        return false;
+    }
+
+    bool isZero(const Exp* expr) {
+        int value = 0;
+        return isIntegerLiteral(expr, value) && value == 0;
+    }
+
+    bool isOne(const Exp* expr) {
+        int value = 0;
+        return isIntegerLiteral(expr, value) && value == 1;
+    }
+
+    Exp* makeIntLiteral(int value) {
+        return new NumberExpDecimal(value);
+    }
+
+    Type* cloneType(Type* type) {
+        if (!type) return nullptr;
+        if (auto* id = dynamic_cast<IdType*>(type)) {
+            return new IdType(id->id);
+        }
+        if (auto* ptr = dynamic_cast<PointerType*>(type)) {
+            return new PointerType(cloneType(ptr->tipo));
+        }
+        if (auto* arr = dynamic_cast<ArrayType*>(type)) {
+            return new ArrayType(arr->exp1, arr->exp2, cloneType(arr->tipo), arr->existe_exp2);
+        }
+        if (auto* opt = dynamic_cast<OptionalType*>(type)) {
+            return new OptionalType(cloneType(opt->tipo));
+        }
+        if (auto* err = dynamic_cast<ErrorType*>(type)) {
+            return new ErrorType(cloneType(err->tipo));
+        }
+        if (auto* unionType = dynamic_cast<UnionType*>(type)) {
+            auto* copy = new UnionType(unionType->nombre);
+            copy->campo_nombres = unionType->campo_nombres;
+            copy->campo_tipos = std::vector<Type*>();
+            for (Type* t : unionType->campo_tipos) copy->campo_tipos.push_back(cloneType(t));
+            return copy;
+        }
+        if (auto* enumType = dynamic_cast<EnumType*>(type)) {
+            auto* copy = new EnumType(enumType->nombre);
+            copy->valores = enumType->valores;
+            return copy;
+        }
+        return nullptr;
+    }
+
+    Exp* simplifyBinaryExp(Exp* left, Exp* right, BinaryOp op) {
+        if (op == PLUS_OP) {
+            if (isZero(left)) return right;
+            if (isZero(right)) return left;
+        } else if (op == MINUS_OP) {
+            if (isZero(right)) return left;
+        } else if (op == MUL_OP) {
+            if (isZero(left) || isZero(right)) return makeIntLiteral(0);
+            if (isOne(left)) return right;
+            if (isOne(right)) return left;
+        } else if (op == DIV_OP) {
+            if (isOne(right)) return left;
+            if (isZero(left)) return makeIntLiteral(0);
+        } else if (op == MODULO_OP) {
+            if (isOne(right)) return makeIntLiteral(0);
+        }
+        return nullptr;
+    }
+
+    Exp* cloneExpTree(Exp* expr) {
+        if (!expr) return nullptr;
+
+        if (auto* number = dynamic_cast<NumberExpDecimal*>(expr)) {
+            return new NumberExpDecimal(number->value);
+        }
+        if (auto* floatNum = dynamic_cast<NumberExpFlotante*>(expr)) {
+            return new NumberExpFlotante(floatNum->value);
+        }
+        if (auto* text = dynamic_cast<StringExp*>(expr)) {
+            return new StringExp(text->valor);
+        }
+        if (auto* ch = dynamic_cast<CharExp*>(expr)) {
+            return new CharExp(ch->valor);
+        }
+        if (auto* id = dynamic_cast<IdExp*>(expr)) {
+            return new IdExp(id->value);
+        }
+        if (auto* boolean = dynamic_cast<BoolExp*>(expr)) {
+            return new BoolExp();
+        }
+        if (auto* notExp = dynamic_cast<NotExp*>(expr)) {
+            return new NotExp();
+        }
+        if (auto* call = dynamic_cast<FcallExp*>(expr)) {
+            auto* copy = new FcallExp();
+            copy->nombre = call->nombre;
+            for (Exp* arg : call->argumentos) {
+                copy->argumentos.push_back(cloneExpTree(arg));
+            }
+            return copy;
+        }
+        if (auto* unary = dynamic_cast<UnaryExp*>(expr)) {
+            return new UnaryExp(unary->op, cloneExpTree(unary->exp));
+        }
+        if (auto* newExp = dynamic_cast<NewExp*>(expr)) {
+            return new NewExp(cloneType(newExp->tipo));
+        }
+        if (auto* nul = dynamic_cast<NullExp*>(expr)) {
+            return new NullExp();
+        }
+        if (auto* undef = dynamic_cast<UndefinedExp*>(expr)) {
+            return new UndefinedExp();
+        }
+        if (auto* ref = dynamic_cast<ReferenceExp*>(expr)) {
+            return new ReferenceExp();
+        }
+        if (auto* ptr = dynamic_cast<PunteroExp*>(expr)) {
+            return new PunteroExp();
+        }
+        if (auto* listExp = dynamic_cast<AlgoconcorchetesylistaExp*>(expr)) {
+            auto* copy = new AlgoconcorchetesylistaExp(nullptr, {});
+            copy->nombre = cloneExpTree(listExp->nombre);
+            for (Exp* arg : listExp->argumentos) {
+                copy->argumentos.push_back(cloneExpTree(arg));
+            }
+            return copy;
+        }
+        if (auto* indexExp = dynamic_cast<AlgoconcorchetesExp*>(expr)) {
+            return new AlgoconcorchetesExp(cloneExpTree(indexExp->nombre), cloneExpTree(indexExp->dentroexp));
+        }
+        if (auto* pointExp = dynamic_cast<PuntoExp*>(expr)) {
+            return new PuntoExp(cloneExpTree(pointExp->exp), pointExp->id);
+        }
+        if (auto* lambda = dynamic_cast<LambdaExp*>(expr)) {
+            std::vector<Type*> clonedTypes;
+            for (Type* type : lambda->tipo_parametros) {
+                clonedTypes.push_back(cloneType(type));
+            }
+            return new LambdaExp(cloneType(lambda->tipo), nullptr, lambda->id_parametros, clonedTypes);
+        }
+        if (auto* bin = dynamic_cast<BinaryExp*>(expr)) {
+            return new BinaryExp(cloneExpTree(bin->left), cloneExpTree(bin->right), bin->op);
+        }
+
+        return nullptr;
+    }
+
+    Exp* substituteExp(Exp* expr, const std::unordered_map<std::string, Exp*>& substitutions) {
+        if (!expr) return nullptr;
+
+        if (auto* id = dynamic_cast<IdExp*>(expr)) {
+            auto it = substitutions.find(id->value);
+            if (it != substitutions.end()) {
+                return cloneExpTree(it->second);
+            }
+            return new IdExp(id->value);
+        }
+
+        if (auto* bin = dynamic_cast<BinaryExp*>(expr)) {
+            Exp* left = substituteExp(bin->left, substitutions);
+            Exp* right = substituteExp(bin->right, substitutions);
+            return new BinaryExp(left, right, bin->op);
+        }
+        if (auto* unary = dynamic_cast<UnaryExp*>(expr)) {
+            return new UnaryExp(unary->op, substituteExp(unary->exp, substitutions));
+        }
+        if (auto* notExp = dynamic_cast<NotExp*>(expr)) {
+            return new NotExp();
+        }
+        if (auto* call = dynamic_cast<FcallExp*>(expr)) {
+            auto* copy = new FcallExp();
+            copy->nombre = call->nombre;
+            for (Exp* arg : call->argumentos) {
+                copy->argumentos.push_back(substituteExp(arg, substitutions));
+            }
+            return copy;
+        }
+        if (auto* number = dynamic_cast<NumberExpDecimal*>(expr)) {
+            return new NumberExpDecimal(number->value);
+        }
+        if (auto* floatNum = dynamic_cast<NumberExpFlotante*>(expr)) {
+            return new NumberExpFlotante(floatNum->value);
+        }
+        if (auto* text = dynamic_cast<StringExp*>(expr)) {
+            return new StringExp(text->valor);
+        }
+        if (auto* ch = dynamic_cast<CharExp*>(expr)) {
+            return new CharExp(ch->valor);
+        }
+        if (auto* boolean = dynamic_cast<BoolExp*>(expr)) {
+            return new BoolExp();
+        }
+        if (auto* nul = dynamic_cast<NullExp*>(expr)) {
+            return new NullExp();
+        }
+        if (auto* undef = dynamic_cast<UndefinedExp*>(expr)) {
+            return new UndefinedExp();
+        }
+        if (auto* ref = dynamic_cast<ReferenceExp*>(expr)) {
+            return new ReferenceExp();
+        }
+        if (auto* ptr = dynamic_cast<PunteroExp*>(expr)) {
+            return new PunteroExp();
+        }
+        if (auto* listExp = dynamic_cast<AlgoconcorchetesylistaExp*>(expr)) {
+            auto* copy = new AlgoconcorchetesylistaExp(nullptr, {});
+            copy->nombre = substituteExp(listExp->nombre, substitutions);
+            for (Exp* arg : listExp->argumentos) {
+                copy->argumentos.push_back(substituteExp(arg, substitutions));
+            }
+            return copy;
+        }
+        if (auto* indexExp = dynamic_cast<AlgoconcorchetesExp*>(expr)) {
+            return new AlgoconcorchetesExp(substituteExp(indexExp->nombre, substitutions), substituteExp(indexExp->dentroexp, substitutions));
+        }
+        if (auto* pointExp = dynamic_cast<PuntoExp*>(expr)) {
+            return new PuntoExp(substituteExp(pointExp->exp, substitutions), pointExp->id);
+        }
+        if (auto* lambda = dynamic_cast<LambdaExp*>(expr)) {
+            std::vector<Type*> clonedTypes;
+            for (Type* type : lambda->tipo_parametros) {
+                clonedTypes.push_back(cloneType(type));
+            }
+            return new LambdaExp(cloneType(lambda->tipo), nullptr, lambda->id_parametros, clonedTypes);
+        }
+        return nullptr;
+    }
+
+    bool isSimpleFunction(Fundec* fundec) {
+        if (!fundec || !fundec->cuerpo || fundec->cuerpo->slist.size() != 1) return false;
+        auto it = fundec->cuerpo->slist.begin();
+        auto* ret = dynamic_cast<ReturnStm*>(*it);
+        return ret != nullptr && ret->exp != nullptr;
+    }
+
+    Exp* rewriteExp(Exp* expr, InlineContext& ctx) {
+        if (!expr) return nullptr;
+
+        if (auto* call = dynamic_cast<FcallExp*>(expr)) {
+            std::vector<Exp*> rewrittenArgs;
+            rewrittenArgs.reserve(call->argumentos.size());
+            for (Exp* arg : call->argumentos) {
+                rewrittenArgs.push_back(rewriteExp(arg, ctx));
+            }
+
+            auto it = ctx.functions.find(call->nombre);
+            if (it != ctx.functions.end() && !ctx.inliningStack.count(call->nombre) &&
+                isSimpleFunction(it->second) && rewrittenArgs.size() == it->second->id_parametros.size()) {
+                ctx.inliningStack.insert(call->nombre);
+                std::unordered_map<std::string, Exp*> substitutions;
+                for (size_t i = 0; i < rewrittenArgs.size(); ++i) {
+                    substitutions[it->second->id_parametros[i]] = rewrittenArgs[i];
+                }
+
+                auto itStmt = it->second->cuerpo->slist.begin();
+                auto* ret = dynamic_cast<ReturnStm*>(*itStmt);
+                Exp* inlined = nullptr;
+                if (ret && ret->exp) {
+                    inlined = substituteExp(ret->exp, substitutions);
+                }
+
+                ctx.inliningStack.erase(call->nombre);
+                return inlined ? inlined : makeIntLiteral(0);
+            }
+
+            auto* copy = new FcallExp();
+            copy->nombre = call->nombre;
+            copy->argumentos = std::move(rewrittenArgs);
+            return copy;
+        }
+
+        if (auto* bin = dynamic_cast<BinaryExp*>(expr)) {
+            Exp* left = rewriteExp(bin->left, ctx);
+            Exp* right = rewriteExp(bin->right, ctx);
+
+            if (Exp* simplified = simplifyBinaryExp(left, right, bin->op)) {
+                return simplified;
+            }
+            return new BinaryExp(left, right, bin->op);
+        }
+
+        if (auto* unary = dynamic_cast<UnaryExp*>(expr)) {
+            Exp* inner = rewriteExp(unary->exp, ctx);
+            return new UnaryExp(unary->op, inner);
+        }
+
+        if (auto* notExp = dynamic_cast<NotExp*>(expr)) {
+            rewriteExp(notExp->exp, ctx);
+            return new NotExp();
+        }
+
+        if (auto* listExp = dynamic_cast<AlgoconcorchetesylistaExp*>(expr)) {
+            Exp* base = rewriteExp(listExp->nombre, ctx);
+            std::vector<Exp*> rewrittenArgs;
+            rewrittenArgs.reserve(listExp->argumentos.size());
+            for (Exp* arg : listExp->argumentos) {
+                rewrittenArgs.push_back(rewriteExp(arg, ctx));
+            }
+            auto* copy = new AlgoconcorchetesylistaExp(base, {});
+            copy->argumentos = std::move(rewrittenArgs);
+            return copy;
+        }
+
+        if (auto* indexExp = dynamic_cast<AlgoconcorchetesExp*>(expr)) {
+            Exp* base = rewriteExp(indexExp->nombre, ctx);
+            Exp* inner = rewriteExp(indexExp->dentroexp, ctx);
+            return new AlgoconcorchetesExp(base, inner);
+        }
+
+        if (auto* pointExp = dynamic_cast<PuntoExp*>(expr)) {
+            Exp* base = rewriteExp(pointExp->exp, ctx);
+            return new PuntoExp(base, pointExp->id);
+        }
+
+        return cloneExpTree(expr);
+    }
+
+    void rewriteStmt(Stmt* stmt, InlineContext& ctx) {
+        if (!stmt) return;
+
+        if (auto* asgn = dynamic_cast<AsignStmt*>(stmt)) {
+            asgn->exp = rewriteExp(asgn->exp, ctx);
+        } else if (auto* print = dynamic_cast<PrintStmt*>(stmt)) {
+            print->exp = rewriteExp(print->exp, ctx);
+        } else if (auto* ret = dynamic_cast<ReturnStm*>(stmt)) {
+            ret->exp = rewriteExp(ret->exp, ctx);
+        } else if (auto* del = dynamic_cast<DeleteStm*>(stmt)) {
+            del->exp = rewriteExp(del->exp, ctx);
+        } else if (auto* ifStmt = dynamic_cast<IfStmt*>(stmt)) {
+            ifStmt->condicion = rewriteExp(ifStmt->condicion, ctx);
+            rewriteStmt(new BodyStmt(ifStmt->cuerpodelif), ctx);
+            if (ifStmt->hayelse) rewriteStmt(new BodyStmt(ifStmt->cuerpodelelse), ctx);
+        } else if (auto* whileStmt = dynamic_cast<WhileStmt*>(stmt)) {
+            whileStmt->condicion = rewriteExp(whileStmt->condicion, ctx);
+            for (Stmt* inner : whileStmt->cuerpodelwhile) {
+                rewriteStmt(inner, ctx);
+            }
+        } else if (auto* bodyStmt = dynamic_cast<BodyStmt*>(stmt)) {
+            if (bodyStmt->cuerpo) {
+                for (Stmt* inner : bodyStmt->cuerpo->slist) {
+                    rewriteStmt(inner, ctx);
+                }
+            }
+        } else if (auto* switchStmt = dynamic_cast<SwitchStmt*>(stmt)) {
+            switchStmt->condicion = rewriteExp(switchStmt->condicion, ctx);
+            for (auto& caso : switchStmt->casos) {
+                caso.first = rewriteExp(caso.first, ctx);
+                if (caso.second) {
+                    for (Stmt* inner : caso.second->slist) {
+                        rewriteStmt(inner, ctx);
+                    }
+                }
+            }
+            if (switchStmt->default_caso) {
+                for (Stmt* inner : switchStmt->default_caso->slist) {
+                    rewriteStmt(inner, ctx);
+                }
+            }
+        } else if (auto* tryStmt = dynamic_cast<TryStmt*>(stmt)) {
+            tryStmt->expr = rewriteExp(tryStmt->expr, ctx);
+            if (tryStmt->try_body) {
+                for (Stmt* inner : tryStmt->try_body->slist) {
+                    rewriteStmt(inner, ctx);
+                }
+            }
+            if (tryStmt->catch_body) {
+                for (Stmt* inner : tryStmt->catch_body->slist) {
+                    rewriteStmt(inner, ctx);
+                }
+            }
+        } else if (auto* deferStmt = dynamic_cast<DeferStmt*>(stmt)) {
+            rewriteStmt(deferStmt->stmt, ctx);
+        } else if (auto* forStmt = dynamic_cast<ForStmt*>(stmt)) {
+            if (forStmt->asignacion) rewriteStmt(forStmt->asignacion, ctx);
+            if (forStmt->condicion) forStmt->condicion = rewriteExp(forStmt->condicion, ctx);
+            if (forStmt->incremento) rewriteStmt(forStmt->incremento, ctx);
+            if (forStmt->cuerpo) {
+                for (Stmt* inner : forStmt->cuerpo->slist) {
+                    rewriteStmt(inner, ctx);
+                }
+            }
+        }
+    }
+
+    void rewriteTopDec(Top_dec* dec, InlineContext& ctx) {
+        if (auto* fundec = dynamic_cast<Fundec*>(dec)) {
+            if (!fundec->cuerpo) return;
+            ctx.inliningStack.insert(fundec->nombre);
+            for (Stmt* inner : fundec->cuerpo->slist) {
+                rewriteStmt(inner, ctx);
+            }
+            ctx.inliningStack.erase(fundec->nombre);
+        }
+    }
+}
+
+void opt(Programa* program) {
+    if (!program) return;
+
+    InlineContext ctx;
+    for (Top_dec* dec : program->declist) {
+        if (auto* fundec = dynamic_cast<Fundec*>(dec)) {
+            ctx.functions[fundec->nombre] = fundec;
+        }
+    }
+
+    for (Top_dec* dec : program->declist) {
+        rewriteTopDec(dec, ctx);
+    }
 }
 
 int GenCodeVisitor::getLocalSlot(const string& nombre) {

@@ -87,39 +87,21 @@ pushq %rbp
 movq %rsp, %rbp
 subq $48, %rsp
 call saludar
-movq $4, %rax
-pushq %rax
-movq $3, %rax
-pushq %rax
-popq %rdi
-popq %rsi
-call sumar
+movq $7, %rax
 movq %rax, -8(%rbp)
 movq -8(%rbp), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
 call printf
-movq $20, %rax
-pushq %rax
-movq $10, %rax
-pushq %rax
-popq %rdi
-popq %rsi
-call sumar
+movq $30, %rax
 movq %rax, -16(%rbp)
 movq -16(%rbp), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
 call printf
-movq $200, %rax
-pushq %rax
-movq $100, %rax
-pushq %rax
-popq %rdi
-popq %rsi
-call sumar
+movq $300, %rax
 movq %rax, -24(%rbp)
 movq -24(%rbp), %rax
 movq %rax, %rsi
@@ -222,5 +204,3 @@ end_main:
 movq $0, %rax
 leave
 ret
-
-.section .note.GNU-stack,"",@progbits

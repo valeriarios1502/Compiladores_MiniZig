@@ -58,6 +58,8 @@ class Body;
 class Programa;
 class TypeCheckerVisitor;
 
+void opt(Programa* program);
+
 struct CFValue {
     bool      is_const = false;
     long long int_val  = 0;
