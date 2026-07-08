@@ -493,9 +493,9 @@ void GenCodeVisitor::emitirDefers() {
 }
 
 int GenCodeVisitor::alignStackBytes(int bytes) const {
-    if (bytes == 0) bytes = 0;
-    int rem = bytes % 8;
-    return rem == 0 ? bytes : bytes + (8 - rem);
+    if (bytes == 0) bytes = 16;
+    int rem = bytes % 16;
+    return rem == 0 ? bytes : bytes + (16 - rem);
 }
 
 int GenCodeVisitor::elementSizeBytes(Type* tipo) const {
@@ -527,30 +527,16 @@ void GenCodeVisitor::emitArrayElementCount(ArrayType* tipo) {
 }
 
 size_t GenCodeVisitor::maxRegisterArgs() const {
-#ifdef _WIN32
-    return 4;
-#else
     return 6;
-#endif
 }
 
 const char* GenCodeVisitor::argRegister(size_t index) const {
-#ifdef _WIN32
-    static const char* argRegs[] = {"%rcx", "%rdx", "%r8", "%r9"};
-#else
     static const char* argRegs[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
-#endif
     return index < maxRegisterArgs() ? argRegs[index] : nullptr;
 }
 
 void GenCodeVisitor::emitCall(const std::string& nombre) {
-#ifdef _WIN32
-    out << "subq $32, %rsp\n";
-#endif
     out << "call " << nombre << "\n";
-#ifdef _WIN32
-    out << "addq $32, %rsp\n";
-#endif
 }
 
 void GenCodeVisitor::emitStringData(const std::string& label, const std::string& value) {
@@ -598,16 +584,9 @@ void GenCodeVisitor::genAddress(Exp* lval) {
             auto typeIt = variableTypes.find(id->value);
             if (typeIt != variableTypes.end()) baseType = stripPointerType(typeIt->second);
         }
-        if (!baseType.empty() && unionFieldOffsets.count(baseType)) {
-            auto& campos = unionFieldOffsets[baseType];
-            auto it = campos.find(p->id);
-            if (it != campos.end()) off = it->second;
-        } else if (!baseType.empty() && structFieldOffsets.count(baseType)) {
-            auto& campos = structFieldOffsets[baseType];
-            auto it = campos.find(p->id);
-            if (it != campos.end()) off = it->second;
-        }
-        out << "  addq $" << off << ", %rax\n";
+        int fieldIndex = resolveStructFieldIndex(baseType, p->id, structFieldOffsets);
+        out << "  movq $" << fieldIndex << ", %rcx\n";
+        out << "  leaq (%rax,%rcx,8), %rax\n";
     } else {
         lval->accept(this); // caso *p = x: lval ya es la dirección
     }
@@ -868,7 +847,7 @@ void GenCodeVisitor::visit(Template *t) {
     out << "pushq %rbp\n";
     out << "movq %rsp, %rbp\n";
 
-    int bytes = alignStackBytes(funcontador[nombreCompleto] * 8);
+    int bytes = alignStackBytes(funcontador[nombreCompleto] * 8 + 8);
     callScratchOffset = 0;
 
     out << "subq $" << bytes << ", %rsp\n";
@@ -928,11 +907,13 @@ void GenCodeVisitor::visit(ConstDec *c) {
 
 void GenCodeVisitor::visit(VarDec *v) {
     if (auto unionType = dynamic_cast<UnionType*>(v->tipo)) {
+        int numeroCampos = (int)unionType->campo_nombres.size();
+        structFields[unionType->nombre] = numeroCampos;
+
         std::unordered_map<std::string,int> offsets;
-        for (const auto& campo : unionType->campo_nombres)
-            offsets[campo] = 0;
-        unionFieldOffsets[unionType->nombre] = offsets;
-        unionSizes[unionType->nombre] = 8;
+        for (int i = 0; i < numeroCampos; i++)
+            offsets[unionType->campo_nombres[i]] = i * 8;
+        structFieldOffsets[unionType->nombre] = offsets;
         return;
     }
 
@@ -1018,7 +999,7 @@ void GenCodeVisitor::visit(Fundec* dec) {
     out << "pushq %rbp\n";
     out << "movq %rsp, %rbp\n";
 
-    int bytes = alignStackBytes(funcontador[dec->nombre] * 8);
+    int bytes = alignStackBytes(funcontador[dec->nombre] * 8 + 8);
     callScratchOffset = 0;
 
     out << "subq $" << bytes << ", %rsp\n";
@@ -1219,9 +1200,7 @@ Value GenCodeVisitor::visit(NewExp *e) {
 
     int tamanoBytes = 8; 
 
-    if (!this->lastTypeName.empty() && unionSizes.count(this->lastTypeName)) {
-        tamanoBytes = unionSizes[this->lastTypeName];
-    } else if (!this->lastTypeName.empty() && structFields.count(this->lastTypeName)) {
+    if (!this->lastTypeName.empty() && structFields.count(this->lastTypeName)) {
         int numeroCampos = structFields[this->lastTypeName];
         tamanoBytes = numeroCampos * 8;
     }
@@ -1290,17 +1269,9 @@ Value GenCodeVisitor::visit(PuntoExp *e) {
         if (typeIt != variableTypes.end()) baseType = stripPointerType(typeIt->second);
     }
 
-    if (!baseType.empty() && unionFieldOffsets.count(baseType)) {
-        auto& campos = unionFieldOffsets[baseType];
-        auto it = campos.find(e->id);
-        if (it != campos.end()) offsetCampo = it->second;
-    } else if (!baseType.empty() && structFieldOffsets.count(baseType)) {
-        auto& campos = structFieldOffsets[baseType];
-        auto it = campos.find(e->id);
-        if (it != campos.end()) offsetCampo = it->second;
-    }
-
-    out << "movq " << offsetCampo << "(%r10), %rax\n";
+    int fieldIndex = resolveStructFieldIndex(baseType, e->id, structFieldOffsets);
+    out << "movq $" << fieldIndex << ", %rcx\n";
+    out << "movq (%r10,%rcx,8), %rax\n";
     return Value::makeInt(0);
 }
 

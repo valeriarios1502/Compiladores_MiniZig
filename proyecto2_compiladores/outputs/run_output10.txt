@@ -1,20 +1,5 @@
 === COMPILADOR MINIZIG ===
 Parseo exitoso
-Codigo x86 generado en: inputs\input10.s
+Codigo x86 generado en: inputs/input10.s
 
 === EJECUCION DEL PROGRAMA ===
-120
-3628800
-13
-55
-3
-4
-50
-4
-3
-42
-cinco
-tres
-ocho
-uno
-nueve

@@ -26,29 +26,23 @@ movzbq %al, %rax
 str_1: .string "cero"
 .text
 leaq str_1(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-subq $32, %rsp
 call printf
-addq $32, %rsp
   jmp endif_0
 else_0:
 .data
 str_2: .string "no cero"
 .text
 leaq str_2(%rip), %rax
-movq %rax, %rdx
-leaq print_str_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_str_fmt(%rip), %rdi
 movl $0, %eax
-subq $32, %rsp
 call printf
-addq $32, %rsp
 endif_0:
-    movq $40, %rcx
-subq $32, %rsp
+    movq $40, %rdi
 call malloc
-addq $32, %rsp
 movq %rax, -16(%rbp)
 movq $10, %rax
 pushq %rax
@@ -116,12 +110,10 @@ movq %rax, %rcx
 popq %rax
 leaq (%rax,%rcx,8), %rax
 movq (%rax), %rax
-movq %rax, %rdx
-leaq print_int_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-subq $32, %rsp
 call printf
-addq $32, %rsp
 movq -24(%rbp), %rax
 pushq %rax
 movq $1, %rax
@@ -164,12 +156,10 @@ movq %rax, -40(%rbp)
   jmp while_4
 endwhile_4:
 movq -32(%rbp), %rax
-movq %rax, %rdx
-leaq print_int_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-subq $32, %rsp
 call printf
-addq $32, %rsp
 movq $0, %rax
 movq %rax, -48(%rbp)
 while_5:
@@ -209,12 +199,10 @@ movq %rax, -48(%rbp)
   jmp while_5
 endwhile_5:
 movq -48(%rbp), %rax
-movq %rax, %rdx
-leaq print_int_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-subq $32, %rsp
 call printf
-addq $32, %rsp
 movq $0, %rax
 pushq %rax
 popq %rax
@@ -229,9 +217,7 @@ main:
 pushq %rbp
 movq %rsp, %rbp
 subq $16, %rsp
-subq $32, %rsp
 call control
-addq $32, %rsp
 end_main:
 movq $0, %rax
 leave

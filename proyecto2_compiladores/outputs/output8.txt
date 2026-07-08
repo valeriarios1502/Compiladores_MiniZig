@@ -12,12 +12,10 @@ subq $16, %rsp
 movq $100, %rax
 movq %rax, -8(%rbp)
 movq -8(%rbp), %rax
-movq %rax, %rdx
-leaq print_int_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-subq $32, %rsp
 call printf
-addq $32, %rsp
 end___comptime__:
 movq $0, %rax
 leave
@@ -27,7 +25,7 @@ doble:
 pushq %rbp
 movq %rsp, %rbp
 subq $32, %rsp
-movq %rcx, -8(%rbp)
+movq %rdi, -8(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
 movq $2, %rax
@@ -49,7 +47,7 @@ triple:
 pushq %rbp
 movq %rsp, %rbp
 subq $32, %rsp
-movq %rcx, -8(%rbp)
+movq %rdi, -8(%rbp)
 movq -8(%rbp), %rax
 pushq %rax
 movq $3, %rax
@@ -71,8 +69,8 @@ potencia:
 pushq %rbp
 movq %rsp, %rbp
 subq $48, %rsp
-movq %rcx, -8(%rbp)
-movq %rdx, -16(%rbp)
+movq %rdi, -8(%rbp)
+movq %rsi, -16(%rbp)
 movq $1, %rax
 movq %rax, -24(%rbp)
 movq $0, %rax
@@ -121,66 +119,50 @@ movq %rsp, %rbp
 subq $48, %rsp
 movq $5, %rax
 pushq %rax
-popq %rcx
-subq $32, %rsp
+popq %rdi
 call doble
-addq $32, %rsp
 movq %rax, -8(%rbp)
 movq -8(%rbp), %rax
-movq %rax, %rdx
-leaq print_int_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-subq $32, %rsp
 call printf
-addq $32, %rsp
 movq $7, %rax
 pushq %rax
-popq %rcx
-subq $32, %rsp
+popq %rdi
 call triple
-addq $32, %rsp
 movq %rax, -16(%rbp)
 movq -16(%rbp), %rax
-movq %rax, %rdx
-leaq print_int_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-subq $32, %rsp
 call printf
-addq $32, %rsp
 movq $8, %rax
 pushq %rax
 movq $2, %rax
 pushq %rax
-popq %rcx
-popq %rdx
-subq $32, %rsp
+popq %rdi
+popq %rsi
 call potencia
-addq $32, %rsp
 movq %rax, -24(%rbp)
 movq -24(%rbp), %rax
-movq %rax, %rdx
-leaq print_int_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-subq $32, %rsp
 call printf
-addq $32, %rsp
 movq $4, %rax
 pushq %rax
 movq $3, %rax
 pushq %rax
-popq %rcx
-popq %rdx
-subq $32, %rsp
+popq %rdi
+popq %rsi
 call potencia
-addq $32, %rsp
 movq %rax, -32(%rbp)
 movq -32(%rbp), %rax
-movq %rax, %rdx
-leaq print_int_fmt(%rip), %rcx
+movq %rax, %rsi
+leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
-subq $32, %rsp
 call printf
-addq $32, %rsp
 end_main:
 movq $0, %rax
 leave

@@ -1,14 +1,5 @@
 === COMPILADOR MINIZIG ===
 Parseo exitoso
-Codigo x86 generado en: inputs\input7.s
+Codigo x86 generado en: inputs/input7.s
 
 === EJECUCION DEL PROGRAMA ===
-uno
-dos
-tres
-otro
-lunes
-miercoles
-viernes
-fin de semana
-dos
