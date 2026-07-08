@@ -12,6 +12,21 @@ def run_capture(cmd):
         errors="replace",
     )
 
+def write_result_section(file, title, result, not_run_reason=None):
+    file.write(f"=== {title} ===\n")
+    if result is None:
+        file.write(f"No ejecutado: {not_run_reason}\n\n")
+        return
+
+    if result.stdout:
+        file.write(result.stdout)
+    if result.stdout and not result.stdout.endswith("\n"):
+        file.write("\n")
+    if result.stderr:
+        file.write(result.stderr)
+    if result.stderr and not result.stderr.endswith("\n"):
+        file.write("\n")
+
 # Archivos c++
 programa = ["main.cpp", "scanner.cpp", "token.cpp", "parser.cpp", "ast.cpp", "visitor.cpp", "Typechecker.cpp"]
 ejecutable = "Proyecto2.exe"
@@ -73,6 +88,22 @@ for i in range(1, 11):
                 f.write(asm_text)
             else:
                 f.write("No se genero assembly correctamente.\n")
+
+        run_output_file = os.path.join(output_dir, f"run_output{i}.txt")
+        with open(run_output_file, "w", encoding="utf-8") as f:
+            write_result_section(f, "COMPILADOR MINIZIG", result)
+            f.write("\n")
+
+            if asm_run is None:
+                if asm_build is None:
+                    asm_run_reason = "no se intento compilar el assembly"
+                elif asm_build.returncode != 0:
+                    asm_run_reason = "el assembly no compilo"
+                else:
+                    asm_run_reason = "no se ejecuto el binario generado"
+            else:
+                asm_run_reason = None
+            write_result_section(f, "EJECUCION DEL PROGRAMA", asm_run, asm_run_reason)
 
         # Archivos generados
         tokens_file = os.path.join(input_dir, f"input{i}_tokens.txt")  # se crea en inputs/

@@ -1,3 +1,14 @@
-=== STDOUT ===
+=== COMPILADOR MINIZIG ===
+Parseo exitoso
+Codigo x86 generado en: inputs\input3.s
 
-=== STDERR ===
+=== EJECUCION DEL PROGRAMA ===
+hola
+7
+30
+300
+10
+20
+30
+40
+50
