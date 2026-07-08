@@ -1,3 +1,16 @@
-=== STDOUT ===
+=== COMPILADOR MINIZIG ===
+Parseo exitoso
+Codigo x86 generado en: inputs\input9.s
 
-=== STDERR ===
+=== EJECUCION DEL PROGRAMA ===
+25
+-1
+5
+30
+50
+veinticinco
+20
+25
+50
+60
+60
