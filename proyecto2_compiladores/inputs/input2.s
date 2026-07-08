@@ -13,43 +13,40 @@ movq $24, %rdi
 call malloc
 movq %rax, -8(%rbp)
 movq $10, %rax
-pushq %rax
-movq -8(%rbp), %rax
-  addq $0, %rax
 movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+movq -8(%rbp), %rax
+movq $0, %rdi
+movq %rcx, (%rax,%rdi,8)
 movq $20, %rax
-pushq %rax
-movq -8(%rbp), %rax
-  addq $8, %rax
 movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+movq -8(%rbp), %rax
+movq $1, %rdi
+movq %rcx, (%rax,%rdi,8)
 movq $30, %rax
-pushq %rax
-movq -8(%rbp), %rax
-  addq $16, %rax
 movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+movq -8(%rbp), %rax
+movq $2, %rdi
+movq %rcx, (%rax,%rdi,8)
 movq -8(%rbp), %rax
 movq %rax, %r10
-movq 0(%r10), %rax
+movq $0, %rcx
+movq (%r10,%rcx,8), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
 call printf
 movq -8(%rbp), %rax
 movq %rax, %r10
-movq 8(%r10), %rax
+movq $1, %rcx
+movq (%r10,%rcx,8), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
 call printf
 movq -8(%rbp), %rax
 movq %rax, %r10
-movq 16(%r10), %rax
+movq $2, %rcx
+movq (%r10,%rcx,8), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
@@ -58,15 +55,14 @@ movq $16, %rdi
 call malloc
 movq %rax, -16(%rbp)
 movq $99, %rax
-pushq %rax
-movq -16(%rbp), %rax
-  addq $0, %rax
 movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+movq -16(%rbp), %rax
+movq $0, %rdi
+movq %rcx, (%rax,%rdi,8)
 movq -16(%rbp), %rax
 movq %rax, %r10
-movq 0(%r10), %rax
+movq $0, %rcx
+movq (%r10,%rcx,8), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
@@ -75,43 +71,40 @@ movq $24, %rdi
 call malloc
 movq %rax, -24(%rbp)
 movq $255, %rax
-pushq %rax
-movq -24(%rbp), %rax
-  addq $0, %rax
 movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+movq -24(%rbp), %rax
+movq $0, %rdi
+movq %rcx, (%rax,%rdi,8)
 movq $128, %rax
-pushq %rax
-movq -24(%rbp), %rax
-  addq $8, %rax
 movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+movq -24(%rbp), %rax
+movq $1, %rdi
+movq %rcx, (%rax,%rdi,8)
 movq $0, %rax
-pushq %rax
-movq -24(%rbp), %rax
-  addq $16, %rax
 movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+movq -24(%rbp), %rax
+movq $2, %rdi
+movq %rcx, (%rax,%rdi,8)
 movq -24(%rbp), %rax
 movq %rax, %r10
-movq 0(%r10), %rax
+movq $0, %rcx
+movq (%r10,%rcx,8), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
 call printf
 movq -24(%rbp), %rax
 movq %rax, %r10
-movq 8(%r10), %rax
+movq $1, %rcx
+movq (%r10,%rcx,8), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
 call printf
 movq -24(%rbp), %rax
 movq %rax, %r10
-movq 16(%r10), %rax
+movq $2, %rcx
+movq (%r10,%rcx,8), %rax
 movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax

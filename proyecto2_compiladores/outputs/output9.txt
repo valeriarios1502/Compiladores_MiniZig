@@ -146,56 +146,46 @@ pushq %rax
 movq -8(%rbp), %rax
 pushq %rax
 movq $0, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $25, %rax
 pushq %rax
 movq -8(%rbp), %rax
 pushq %rax
 movq $1, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $50, %rax
 pushq %rax
 movq -8(%rbp), %rax
 pushq %rax
 movq $2, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $75, %rax
 pushq %rax
 movq -8(%rbp), %rax
 pushq %rax
 movq $3, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $100, %rax
 pushq %rax
 movq -8(%rbp), %rax
 pushq %rax
 movq $4, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $5, %rax
 pushq %rax
 movq -8(%rbp), %rax

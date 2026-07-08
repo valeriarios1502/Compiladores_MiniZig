@@ -64,6 +64,18 @@ namespace {
         return isIntegerLiteral(expr, value) && value == 0;
     }
 
+    int resolveStructFieldIndex(const std::string& baseType, const std::string& fieldName,
+                                const std::unordered_map<std::string, std::unordered_map<std::string, int>>& structFieldOffsets) {
+        if (!baseType.empty() && structFieldOffsets.count(baseType)) {
+            const auto& campos = structFieldOffsets.at(baseType);
+            auto it = campos.find(fieldName);
+            if (it != campos.end()) {
+                return it->second / 8;
+            }
+        }
+        return 0;
+    }
+
     bool isOne(const Exp* expr) {
         int value = 0;
         return isIntegerLiteral(expr, value) && value == 1;
@@ -567,18 +579,14 @@ void GenCodeVisitor::genAddress(Exp* lval) {
         out << "leaq (%rax,%rcx,8), %rax\n";
     } else if (auto p = dynamic_cast<PuntoExp*>(lval)) {
         p->exp->accept(this);
-        int off = 0;
         std::string baseType = lastTypeName;
         if (auto id = dynamic_cast<IdExp*>(p->exp)) {
             auto typeIt = variableTypes.find(id->value);
             if (typeIt != variableTypes.end()) baseType = stripPointerType(typeIt->second);
         }
-        if (!baseType.empty() && structFieldOffsets.count(baseType)) {
-            auto& campos = structFieldOffsets[baseType];
-            auto it = campos.find(p->id);
-            if (it != campos.end()) off = it->second;
-        }
-        out << "  addq $" << off << ", %rax\n";
+        int fieldIndex = resolveStructFieldIndex(baseType, p->id, structFieldOffsets);
+        out << "  movq $" << fieldIndex << ", %rcx\n";
+        out << "  leaq (%rax,%rcx,8), %rax\n";
     } else {
         lval->accept(this); // caso *p = x: lval ya es la dirección
     }
@@ -1255,20 +1263,15 @@ Value GenCodeVisitor::visit(PuntoExp *e) {
     e->exp->accept(this);
     out << "movq %rax, %r10\n";
 
-    int offsetCampo = 0;
     std::string baseType = lastTypeName;
     if (auto id = dynamic_cast<IdExp*>(e->exp)) {
         auto typeIt = variableTypes.find(id->value);
         if (typeIt != variableTypes.end()) baseType = stripPointerType(typeIt->second);
     }
 
-    if (!baseType.empty() && structFieldOffsets.count(baseType)) {
-        auto& campos = structFieldOffsets[baseType];
-        auto it = campos.find(e->id);
-        if (it != campos.end()) offsetCampo = it->second;
-    }
-
-    out << "movq " << offsetCampo << "(%r10), %rax\n";
+    int fieldIndex = resolveStructFieldIndex(baseType, e->id, structFieldOffsets);
+    out << "movq $" << fieldIndex << ", %rcx\n";
+    out << "movq (%r10,%rcx,8), %rax\n";
     return Value::makeInt(0);
 }
 
@@ -1600,6 +1603,46 @@ void GenCodeVisitor::visit(ForStmt* stm) {
 
 //Este si no tengo ni idea d dnd esta en la gramatica
 void GenCodeVisitor::visit(DerefAssignStmt* stm) {
+    if (auto arr = dynamic_cast<AlgoconcorchetesExp*>(stm->lval)) {
+        stm->rval->accept(this);
+        out << "pushq %rax\n";
+
+        if (auto idBase = dynamic_cast<IdExp*>(arr->nombre)) {
+            if (arrayLocals.count(idBase->value)) {
+                out << "  leaq " << (-8 * posicion[idBase->value]) << "(%rbp), %rax\n";
+            } else {
+                idBase->accept(this);
+            }
+        } else {
+            arr->nombre->accept(this);
+        }
+
+        out << "pushq %rax\n";
+        arr->dentroexp->accept(this);
+        out << "movq %rax, %rdi\n";
+        out << "popq %rax\n";
+        out << "popq %rcx\n";
+        out << "movq %rcx, (%rax,%rdi,8)\n";
+        return;
+    }
+
+    if (auto p = dynamic_cast<PuntoExp*>(stm->lval)) {
+        stm->rval->accept(this);
+        out << "movq %rax, %rcx\n";
+        p->exp->accept(this);
+
+        std::string baseType = lastTypeName;
+        if (auto id = dynamic_cast<IdExp*>(p->exp)) {
+            auto typeIt = variableTypes.find(id->value);
+            if (typeIt != variableTypes.end()) baseType = stripPointerType(typeIt->second);
+        }
+
+        int fieldIndex = resolveStructFieldIndex(baseType, p->id, structFieldOffsets);
+        out << "movq $" << fieldIndex << ", %rdi\n";
+        out << "movq %rcx, (%rax,%rdi,8)\n";
+        return;
+    }
+
     stm->rval->accept(this);
     out << "pushq %rax\n";
     genAddress(stm->lval);

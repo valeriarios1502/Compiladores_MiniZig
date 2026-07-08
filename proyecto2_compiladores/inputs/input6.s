@@ -141,34 +141,28 @@ pushq %rax
 movq -80(%rbp), %rax
 pushq %rax
 movq $0, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $200, %rax
 pushq %rax
 movq -80(%rbp), %rax
 pushq %rax
 movq $1, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $300, %rax
 pushq %rax
 movq -80(%rbp), %rax
 pushq %rax
 movq $2, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq -80(%rbp), %rax
 pushq %rax
 movq $0, %rax
@@ -202,12 +196,13 @@ movq %rax, %rsi
 leaq print_int_fmt(%rip), %rdi
 movl $0, %eax
 call printf
+movq $1, %rax
+pushq %rax
 movq -8(%rbp), %rax
 pushq %rax
-movq $1, %rax
-movq %rax, %rcx
-popq %rax
-addq %rcx, %rax
+popq %rdi
+popq %rsi
+call sumar
 movq %rax, -88(%rbp)
 movq -88(%rbp), %rax
 movq %rax, %rsi

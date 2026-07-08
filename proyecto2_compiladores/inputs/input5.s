@@ -49,56 +49,46 @@ pushq %rax
 movq -16(%rbp), %rax
 pushq %rax
 movq $0, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $20, %rax
 pushq %rax
 movq -16(%rbp), %rax
 pushq %rax
 movq $1, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $30, %rax
 pushq %rax
 movq -16(%rbp), %rax
 pushq %rax
 movq $2, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $40, %rax
 pushq %rax
 movq -16(%rbp), %rax
 pushq %rax
 movq $3, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $50, %rax
 pushq %rax
 movq -16(%rbp), %rax
 pushq %rax
 movq $4, %rax
-movq %rax, %rcx
+movq %rax, %rdi
 popq %rax
-leaq (%rax,%rcx,8), %rax
-movq %rax, %rcx
-popq %rax
-movq %rax, (%rcx)
+popq %rcx
+movq %rcx, (%rax,%rdi,8)
 movq $0, %rax
 movq %rax, -24(%rbp)
 while_3:
