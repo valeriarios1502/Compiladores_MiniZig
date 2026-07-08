@@ -1,0 +1,11 @@
+{
+  "name": "minizig-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend HTTP para exponer el compilador MiniZig.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  }
+}
